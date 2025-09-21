@@ -392,7 +392,7 @@ articles_with_coords
 write_csv(articles_with_coords, "blockclub_articles.csv")
 
 
-########### ----
+########### ---- streamlined working ----
 library(rvest)
 library(dplyr)
 library(purrr)

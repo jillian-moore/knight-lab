@@ -9,26 +9,26 @@ library(tidyr)
 # URL of the newspaper site
 url <- "https://blockclubchicago.org/"
 
-# Read the HTML content
+# read the HTML content
 webpage <- read_html(url)
 
-# --- Extract article headlines ---
-# Inspect the site and update the CSS selector accordingly
-headlines <- webpage %>%
-  html_elements(".entry-title, .post-title, h2 a") %>%  # example CSS selectors
+# extract article headlines ---
+# inspect the site and update the CSS selector accordingly
+headlines <- webpage |> 
+  html_elements(".entry-title, .post-title, h2 a") |> 
   html_text(trim = TRUE)
 
-# --- Extract article links ---
+# extract article links ----
 links <- webpage %>%
   html_elements(".entry-title a, .post-title a, h2 a") %>%  # same links as headlines
   html_attr("href")
 
-# --- Extract authors (if available) ---
+# extract authors ----
 authors <- webpage %>%
   html_elements(".byline") %>%  # example CSS selectors
   html_text(trim = TRUE)
 
-# --- Extract publication dates (if available) ---
+# extract publication dates ----
 # dates <- webpage %>%
 #   html_elements(".published, .entry-date") %>%  # example CSS selectors
 #   html_text(trim = TRUE)
@@ -37,19 +37,16 @@ neighborhoods <- webpage %>%
   html_elements(".entry-header a[rel='category tag'], .cat-links a[rel='category tag']") %>%
   html_text(trim = TRUE)
 
-# Combine into a dataframe
+# combine into a dataframe ----
 articles <- tibble(
   author = authors,
   neighborhoods = neighborhoods
 )
 
-# View the results
+# view ----
 print(articles)
 
-
-################
-
-# Method 1: Extract all data within article containers
+# extract all data within article containers ----
 # Try to find the container that holds each complete article
 articles_method1 <- webpage %>%
   html_elements("article, .post, .entry") %>%  # common article container selectors

@@ -19,22 +19,22 @@ headlines <- webpage |>
   html_text(trim = TRUE)
 
 # extract article links ----
-links <- webpage %>%
-  html_elements(".entry-title a, .post-title a, h2 a") %>%  # same links as headlines
+links <- webpage |>
+  html_elements(".entry-title a, .post-title a, h2 a") |>  # same links as headlines
   html_attr("href")
 
 # extract authors ----
-authors <- webpage %>%
-  html_elements(".byline") %>%  # example CSS selectors
+authors <- webpage |>
+  html_elements(".byline") |>  # example CSS selectors
   html_text(trim = TRUE)
 
 # extract publication dates ----
-# dates <- webpage %>%
-#   html_elements(".published, .entry-date") %>%  # example CSS selectors
+# dates <- webpage |>
+#   html_elements(".published, .entry-date") |>  # example CSS selectors
 #   html_text(trim = TRUE)
 
-neighborhoods <- webpage %>%
-  html_elements(".entry-header a[rel='category tag'], .cat-links a[rel='category tag']") %>%
+neighborhoods <- webpage |>
+  html_elements(".entry-header a[rel='category tag'], .cat-links a[rel='category tag']") |>
   html_text(trim = TRUE)
 
 # combine into a dataframe ----
@@ -47,34 +47,34 @@ articles <- tibble(
 print(articles)
 
 # extract all data within article containers ----
-# Try to find the container that holds each complete article
-articles_method1 <- webpage %>%
-  html_elements("article, .post, .entry") %>%  # common article container selectors
+# try to find the container that holds each complete article
+articles_method1 <- webpage |>
+  html_elements("article, .post, .entry") |>
   map_dfr(~ {
     article_node <- .x
     
-    # Extract headline from within this article
-    headline <- article_node %>%
-      html_elements(".entry-title, .post-title, h1, h2, h3") %>%
-      html_text(trim = TRUE) %>%
+    # extract headline from within this article
+    headline <- article_node |>
+      html_elements(".entry-title, .post-title, h1, h2, h3") |>
+      html_text(trim = TRUE) |>
       first() # take first match
     
     # Extract link from within this article
-    link <- article_node %>%
-      html_elements("a") %>%
-      html_attr("href") %>%
+    link <- article_node |>
+      html_elements("a") |>
+      html_attr("href") |>
       first() # take first link
     
     # Extract category/neighborhood from within this article
-    category <- article_node %>%
-      html_elements("a[rel='category tag'], .category, .cat-links a") %>%
-      html_text(trim = TRUE) %>%
+    category <- article_node |>
+      html_elements("a[rel='category tag'], .category, .cat-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ") # join multiple categories
     
     # Extract author from within this article
-    author <- article_node %>%
-      html_elements(".byline, .author, .by-author") %>%
-      html_text(trim = TRUE) %>%
+    author <- article_node |>
+      html_elements(".byline, .author, .by-author") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Return as tibble row
@@ -89,8 +89,8 @@ articles_method1 <- webpage %>%
 print("Method 1 - Article container approach:")
 print(articles_method1)
 
-all_categories <- webpage %>%
-  html_elements("a[rel='category tag']") %>%
+all_categories <- webpage |>
+  html_elements("a[rel='category tag']") |>
   html_text(trim = TRUE)
 
 library(rvest)
@@ -114,8 +114,8 @@ webpage <- read_html(url)
 
 # Method 1: Use the .cat-links class (WordPress standard)
 cat("=== METHOD 1: Using .cat-links ===\n")
-categories_method1 <- webpage %>%
-  html_elements(".cat-links a") %>%
+categories_method1 <- webpage |>
+  html_elements(".cat-links a") |>
   html_text(trim = TRUE)
 
 cat("Categories found with .cat-links a:", length(categories_method1), "\n")
@@ -125,39 +125,39 @@ print(head(categories_method1, 10))
 cat("\n=== METHOD 2: Article-based extraction ===\n")
 
 # Find article containers and extract data from each
-articles <- webpage %>%
-  html_elements("article") %>%
+articles <- webpage |>
+  html_elements("article") |>
   map_dfr(~ {
     article_node <- .x
     
     # Extract headline
-    headline <- article_node %>%
-      html_elements(".entry-title a, h2 a, h1 a") %>%
-      html_text(trim = TRUE) %>%
+    headline <- article_node |>
+      html_elements(".entry-title a, h2 a, h1 a") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Extract link
-    link <- article_node %>%
-      html_elements(".entry-title a, h2 a, h1 a") %>%
-      html_attr("href") %>%
+    link <- article_node |>
+      html_elements(".entry-title a, h2 a, h1 a") |>
+      html_attr("href") |>
       first()
     
     # Extract category using .cat-links
-    category <- article_node %>%
-      html_elements(".cat-links a") %>%
-      html_text(trim = TRUE) %>%
+    category <- article_node |>
+      html_elements(".cat-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Extract author
-    author <- article_node %>%
-      html_elements(".byline, .author, .entry-author") %>%
-      html_text(trim = TRUE) %>%
+    author <- article_node |>
+      html_elements(".byline, .author, .entry-author") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Extract date if available
-    date <- article_node %>%
-      html_elements(".entry-date, .published, time") %>%
-      html_text(trim = TRUE) %>%
+    date <- article_node |>
+      html_elements(".entry-date, .published, time") |>
+      html_text(trim = TRUE) |>
       first()
     
     tibble(
@@ -175,35 +175,35 @@ print(articles)
 # Method 3: Alternative approach - look for category in post classes
 cat("\n=== METHOD 3: Using post classes ===\n")
 
-articles_alt <- webpage %>%
-  html_elements("article[class*='category-'], .post[class*='category-']") %>%
+articles_alt <- webpage |>
+  html_elements("article[class*='category-'], .post[class*='category-']") |>
   map_dfr(~ {
     article_node <- .x
     
     # Extract category from the article's class attribute
-    article_classes <- article_node %>% html_attr("class")
+    article_classes <- article_node |> html_attr("class")
     category_classes <- str_extract_all(article_classes, "category-[a-z0-9-]+")[[1]]
-    category_from_class <- category_classes %>%
-      str_replace("category-", "") %>%
-      str_replace_all("-", " ") %>%
-      str_to_title() %>%
+    category_from_class <- category_classes |>
+      str_replace("category-", "") |>
+      str_replace_all("-", " ") |>
+      str_to_title() |>
       paste(collapse = ", ")
     
     # Extract other data
-    headline <- article_node %>%
-      html_elements(".entry-title a, h2 a, h1 a") %>%
-      html_text(trim = TRUE) %>%
+    headline <- article_node |>
+      html_elements(".entry-title a, h2 a, h1 a") |>
+      html_text(trim = TRUE) |>
       first()
     
-    link <- article_node %>%
-      html_elements(".entry-title a, h2 a, h1 a") %>%
-      html_attr("href") %>%
+    link <- article_node |>
+      html_elements(".entry-title a, h2 a, h1 a") |>
+      html_attr("href") |>
       first()
     
     # Try .cat-links first, then fall back to class-based category
-    category_from_links <- article_node %>%
-      html_elements(".cat-links a") %>%
-      html_text(trim = TRUE) %>%
+    category_from_links <- article_node |>
+      html_elements(".cat-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     category <- ifelse(category_from_links != "", category_from_links, category_from_class)
@@ -221,19 +221,19 @@ print(articles_alt)
 
 # Method 4: Direct category link extraction
 cat("\n=== METHOD 4: Direct category links ===\n")
-category_links <- webpage %>%
-  html_elements("a[href*='/category/']") %>%
+category_links <- webpage |>
+  html_elements("a[href*='/category/']") |>
   map_dfr(~ {
     link_node <- .x
-    category_name <- link_node %>% html_text(trim = TRUE)
-    category_url <- link_node %>% html_attr("href")
+    category_name <- link_node |> html_text(trim = TRUE)
+    category_url <- link_node |> html_attr("href")
     
     tibble(
       category = category_name,
       category_url = category_url
     )
-  }) %>%
-  distinct() %>%
+  }) |>
+  distinct() |>
   filter(category != "" & !is.na(category))
 
 cat("Unique category links found:", nrow(category_links), "\n")
@@ -261,45 +261,45 @@ scrape_blockclub_chicago <- function(url = "https://blockclubchicago.org/") {
   webpage <- read_html(url)
   
   # Extract articles with associated category data
-  articles <- webpage %>%
-    html_elements("article") %>%
+  articles <- webpage |>
+    html_elements("article") |>
     map_dfr(~ {
       article_node <- .x
       
       # Extract headline
-      headline <- article_node %>%
-        html_elements(".entry-title a, h2 a, h1 a") %>%
-        html_text(trim = TRUE) %>%
+      headline <- article_node |>
+        html_elements(".entry-title a, h2 a, h1 a") |>
+        html_text(trim = TRUE) |>
         first()
       
       # Extract link
-      link <- article_node %>%
-        html_elements(".entry-title a, h2 a, h1 a") %>%
-        html_attr("href") %>%
+      link <- article_node |>
+        html_elements(".entry-title a, h2 a, h1 a") |>
+        html_attr("href") |>
         first()
       
       # Extract category/neighborhood using .cat-links (WordPress standard)
-      neighborhoods <- article_node %>%
-        html_elements(".cat-links a") %>%
-        html_text(trim = TRUE) %>%
+      neighborhoods <- article_node |>
+        html_elements(".cat-links a") |>
+        html_text(trim = TRUE) |>
         paste(collapse = ", ")
       
       # Extract author
-      author <- article_node %>%
-        html_elements(".byline, .author, .entry-author, .author-name") %>%
-        html_text(trim = TRUE) %>%
+      author <- article_node |>
+        html_elements(".byline, .author, .entry-author, .author-name") |>
+        html_text(trim = TRUE) |>
         first()
       
       # Extract date if available
-      date <- article_node %>%
-        html_elements(".entry-date, .published, time") %>%
-        html_text(trim = TRUE) %>%
+      date <- article_node |>
+        html_elements(".entry-date, .published, time") |>
+        html_text(trim = TRUE) |>
         first()
       
       # Extract excerpt if available
-      excerpt <- article_node %>%
-        html_elements(".entry-summary, .excerpt, p") %>%
-        html_text(trim = TRUE) %>%
+      excerpt <- article_node |>
+        html_elements(".entry-summary, .excerpt, p") |>
+        html_text(trim = TRUE) |>
         first()
       
       # Clean up and return
@@ -311,9 +311,9 @@ scrape_blockclub_chicago <- function(url = "https://blockclubchicago.org/") {
         date = ifelse(length(date) == 0 || is.na(date), NA, date),
         excerpt = ifelse(length(excerpt) == 0 || is.na(excerpt), NA, excerpt)
       )
-    }) %>%
+    }) |>
     # Remove rows with no headline (likely not actual articles)
-    filter(!is.na(headline)) %>%
+    filter(!is.na(headline)) |>
     # Remove duplicates
     distinct(headline, .keep_all = TRUE)
   
@@ -331,24 +331,24 @@ print(articles_df)
 
 # Show neighborhood distribution
 cat("\n=== NEIGHBORHOOD BREAKDOWN ===\n")
-neighborhood_counts <- articles_df %>%
-  filter(!is.na(neighborhoods)) %>%
-  separate_rows(neighborhoods, sep = ", ") %>%
+neighborhood_counts <- articles_df |>
+  filter(!is.na(neighborhoods)) |>
+  separate_rows(neighborhoods, sep = ", ") |>
   count(neighborhoods, sort = TRUE)
 
 print(neighborhood_counts)
 
 # Clean the data further if needed
-articles_clean <- articles_df %>%
+articles_clean <- articles_df |>
   # Remove articles without neighborhoods if you only want neighborhood-specific content
-  filter(!is.na(neighborhoods)) %>%
+  filter(!is.na(neighborhoods)) |>
   # Clean up neighborhoods column - split multiple neighborhoods into separate rows if needed
-  separate_rows(neighborhoods, sep = ", ") %>%
+  separate_rows(neighborhoods, sep = ", ") |>
   # Clean neighborhood names
   mutate(
     neighborhoods = str_trim(neighborhoods),
     neighborhoods = str_to_title(neighborhoods)
-  ) %>%
+  ) |>
   # Remove any empty neighborhood values
   filter(neighborhoods != "" & !is.na(neighborhoods))
 
@@ -362,13 +362,13 @@ cat("\n=== ADDING GEOCODING ===\n")
 neighborhoods_unique <- unique(articles_clean$neighborhoods)
 
 # Geocode neighborhoods (add "Chicago, IL" to improve accuracy)
-neighborhoods_geocoded <- tibble(neighborhoods = neighborhoods_unique) %>%
-  mutate(full_address = paste(neighborhoods, "Chicago, IL")) %>%
-  geocode(full_address, method = 'osm', lat = latitude, long = longitude) %>%
+neighborhoods_geocoded <- tibble(neighborhoods = neighborhoods_unique) |>
+  mutate(full_address = paste(neighborhoods, "Chicago, IL")) |>
+  geocode(full_address, method = 'osm', lat = latitude, long = longitude) |>
   select(neighborhoods, latitude, longitude)
 
 # Join back to main data
-articles_with_coords <- articles_clean %>%
+articles_with_coords <- articles_clean |>
   left_join(neighborhoods_geocoded, by = "neighborhoods")
 
 print(articles_with_coords)
@@ -410,51 +410,51 @@ scrape_single_article <- function(article_url) {
     article_page <- read_html(article_url)
     
     # Extract detailed article information
-    headline <- article_page %>%
-      html_elements("h1.entry-title, .entry-header h1, h1") %>%
-      html_text(trim = TRUE) %>%
+    headline <- article_page |>
+      html_elements("h1.entry-title, .entry-header h1, h1") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Full article text (multiple paragraphs)
-    article_text <- article_page %>%
-      html_elements(".entry-content p, .post-content p, .content p") %>%
-      html_text(trim = TRUE) %>%
+    article_text <- article_page |>
+      html_elements(".entry-content p, .post-content p, .content p") |>
+      html_text(trim = TRUE) |>
       paste(collapse = " ")
     
     # Author information
-    author <- article_page %>%
-      html_elements(".author-name, .byline, .entry-author, .author") %>%
-      html_text(trim = TRUE) %>%
+    author <- article_page |>
+      html_elements(".author-name, .byline, .entry-author, .author") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Publication date
-    pub_date <- article_page %>%
-      html_elements(".entry-date, .published, time, .post-date") %>%
-      html_text(trim = TRUE) %>%
+    pub_date <- article_page |>
+      html_elements(".entry-date, .published, time, .post-date") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Categories/neighborhoods
-    categories <- article_page %>%
-      html_elements(".cat-links a, .categories a") %>%
-      html_text(trim = TRUE) %>%
+    categories <- article_page |>
+      html_elements(".cat-links a, .categories a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Tags
-    tags <- article_page %>%
-      html_elements(".tags a, .post-tags a, .tag-links a") %>%
-      html_text(trim = TRUE) %>%
+    tags <- article_page |>
+      html_elements(".tags a, .post-tags a, .tag-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Featured image
-    featured_image <- article_page %>%
-      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") %>%
-      html_attr("src") %>%
+    featured_image <- article_page |>
+      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") |>
+      html_attr("src") |>
       first()
     
     # Meta description
-    meta_description <- article_page %>%
-      html_elements("meta[name='description']") %>%
-      html_attr("content") %>%
+    meta_description <- article_page |>
+      html_elements("meta[name='description']") |>
+      html_attr("content") |>
       first()
     
     # Word count
@@ -504,15 +504,15 @@ scrape_all_articles <- function(homepage_url = "https://blockclubchicago.org/", 
   # Get all article links from homepage
   homepage <- read_html(homepage_url)
   
-  article_links <- homepage %>%
-    html_elements("article") %>%
+  article_links <- homepage |>
+    html_elements("article") |>
     map_chr(~ {
-      .x %>%
-        html_elements(".entry-title a, h2 a, h1 a") %>%
-        html_attr("href") %>%
+      .x |>
+        html_elements(".entry-title a, h2 a, h1 a") |>
+        html_attr("href") |>
         first()
-    }) %>%
-    na.omit() %>%
+    }) |>
+    na.omit() |>
     unique()
   
   cat("Found", length(article_links), "article links on homepage\n")
@@ -581,9 +581,9 @@ run_complete_scrape <- function(max_articles = NULL, save_file = "blockclub_all_
   cat("Date range:", min(all_articles$scraped_at, na.rm = TRUE), "to", max(all_articles$scraped_at, na.rm = TRUE), "\n")
   
   # Show unique categories
-  all_categories <- all_articles %>%
-    filter(!is.na(categories)) %>%
-    separate_rows(categories, sep = ", ") %>%
+  all_categories <- all_articles |>
+    filter(!is.na(categories)) |>
+    separate_rows(categories, sep = ", ") |>
     count(categories, sort = TRUE)
   
   cat("\nTop 10 neighborhoods/categories:\n")
@@ -636,51 +636,51 @@ scrape_single_article <- function(article_url) {
     article_page <- read_html(article_url)
     
     # Extract detailed article information
-    headline <- article_page %>%
-      html_elements("h1.entry-title, .entry-header h1, h1") %>%
-      html_text(trim = TRUE) %>%
+    headline <- article_page |>
+      html_elements("h1.entry-title, .entry-header h1, h1") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Full article text (multiple paragraphs)
-    article_text <- article_page %>%
-      html_elements(".entry-content p, .post-content p, .content p") %>%
-      html_text(trim = TRUE) %>%
+    article_text <- article_page |>
+      html_elements(".entry-content p, .post-content p, .content p") |>
+      html_text(trim = TRUE) |>
       paste(collapse = " ")
     
     # Author information
-    author <- article_page %>%
-      html_elements(".author-name, .byline, .entry-author, .author") %>%
-      html_text(trim = TRUE) %>%
+    author <- article_page |>
+      html_elements(".author-name, .byline, .entry-author, .author") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Publication date
-    pub_date <- article_page %>%
-      html_elements(".entry-date, .published, time, .post-date") %>%
-      html_text(trim = TRUE) %>%
+    pub_date <- article_page |>
+      html_elements(".entry-date, .published, time, .post-date") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Categories/neighborhoods
-    categories <- article_page %>%
-      html_elements(".cat-links a, .categories a") %>%
-      html_text(trim = TRUE) %>%
+    categories <- article_page |>
+      html_elements(".cat-links a, .categories a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Tags
-    tags <- article_page %>%
-      html_elements(".tags a, .post-tags a, .tag-links a") %>%
-      html_text(trim = TRUE) %>%
+    tags <- article_page |>
+      html_elements(".tags a, .post-tags a, .tag-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Featured image
-    featured_image <- article_page %>%
-      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") %>%
-      html_attr("src") %>%
+    featured_image <- article_page |>
+      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") |>
+      html_attr("src") |>
       first()
     
     # Meta description
-    meta_description <- article_page %>%
-      html_elements("meta[name='description']") %>%
-      html_attr("content") %>%
+    meta_description <- article_page |>
+      html_elements("meta[name='description']") |>
+      html_attr("content") |>
       first()
     
     # Word count
@@ -730,15 +730,15 @@ scrape_all_articles <- function(homepage_url = "https://blockclubchicago.org/", 
   # Get all article links from homepage
   homepage <- read_html(homepage_url)
   
-  article_links <- homepage %>%
-    html_elements("article") %>%
+  article_links <- homepage |>
+    html_elements("article") |>
     map_chr(~ {
-      .x %>%
-        html_elements(".entry-title a, h2 a, h1 a") %>%
-        html_attr("href") %>%
+      .x |>
+        html_elements(".entry-title a, h2 a, h1 a") |>
+        html_attr("href") |>
         first()
-    }) %>%
-    na.omit() %>%
+    }) |>
+    na.omit() |>
     unique()
   
   cat("Found", length(article_links), "article links on homepage\n")
@@ -786,18 +786,18 @@ add_geocoding <- function(articles_df) {
   cat("\n=== STEP 3: Adding geocoding for neighborhoods ===\n")
   
   # Extract unique neighborhoods from categories
-  unique_neighborhoods <- articles_df %>%
-    filter(!is.na(categories)) %>%
-    separate_rows(categories, sep = ", ") %>%
-    mutate(categories = str_trim(categories)) %>%
-    filter(categories != "" & !is.na(categories)) %>%
-    distinct(categories) %>%
+  unique_neighborhoods <- articles_df |>
+    filter(!is.na(categories)) |>
+    separate_rows(categories, sep = ", ") |>
+    mutate(categories = str_trim(categories)) |>
+    filter(categories != "" & !is.na(categories)) |>
+    distinct(categories) |>
     pull(categories)
   
   cat("Found", length(unique_neighborhoods), "unique neighborhoods to geocode\n")
   
   # Create geocoding lookup table
-  neighborhood_coords <- tibble(neighborhood = unique_neighborhoods) %>%
+  neighborhood_coords <- tibble(neighborhood = unique_neighborhoods) |>
     mutate(
       # Add "Chicago, IL" to improve geocoding accuracy
       full_address = paste(neighborhood, "Chicago, IL"),
@@ -814,7 +814,7 @@ add_geocoding <- function(articles_df) {
   cat("Starting geocoding process...\n")
   
   # Geocode with error handling
-  neighborhood_coords <- neighborhood_coords %>%
+  neighborhood_coords <- neighborhood_coords |>
     mutate(
       geocode_attempt = map(full_address, ~ {
         cat("Geocoding:", .x, "\n")
@@ -828,8 +828,8 @@ add_geocoding <- function(articles_df) {
           return(tibble(latitude = NA, longitude = NA))
         })
       })
-    ) %>%
-    unnest(geocode_attempt) %>%
+    ) |>
+    unnest(geocode_attempt) |>
     select(neighborhood, latitude, longitude, full_address)
   
   # Show geocoding results
@@ -837,13 +837,13 @@ add_geocoding <- function(articles_df) {
   cat("Successfully geocoded", successful_geocodes, "out of", nrow(neighborhood_coords), "neighborhoods\n")
   
   # Join coordinates back to articles
-  articles_with_coords <- articles_df %>%
+  articles_with_coords <- articles_df |>
     # Create a row for each article-neighborhood combination
-    separate_rows(categories, sep = ", ") %>%
-    mutate(categories = str_trim(categories)) %>%
-    filter(!is.na(categories) & categories != "") %>%
+    separate_rows(categories, sep = ", ") |>
+    mutate(categories = str_trim(categories)) |>
+    filter(!is.na(categories) & categories != "") |>
     # Join with coordinates
-    left_join(neighborhood_coords, by = c("categories" = "neighborhood")) %>%
+    left_join(neighborhood_coords, by = c("categories" = "neighborhood")) |>
     # Rename for clarity
     rename(
       neighborhood = categories,
@@ -914,15 +914,15 @@ run_complete_scrape <- function(max_articles = NULL, save_file = "blockclub_all_
   
   # Show neighborhood distribution
   if (include_geocoding) {
-    neighborhood_counts <- articles_final %>%
+    neighborhood_counts <- articles_final |>
       count(neighborhood, sort = TRUE)
     
     cat("\nTop 10 neighborhoods by article count:\n")
     print(head(neighborhood_counts, 10))
     
     # Show geocoding success rate
-    geocoded_neighborhoods <- articles_final %>%
-      distinct(neighborhood, neighborhood_lat) %>%
+    geocoded_neighborhoods <- articles_final |>
+      distinct(neighborhood, neighborhood_lat) |>
       summarise(
         total = n(),
         geocoded = sum(!is.na(neighborhood_lat)),
@@ -975,8 +975,8 @@ check_geocoding_sample <- function() {
   
   sample_neighborhoods <- c("Lincoln Park", "Wicker Park", "Logan Square", "Humboldt Park")
   
-  test_coords <- tibble(neighborhood = sample_neighborhoods) %>%
-    mutate(full_address = paste(neighborhood, "Chicago, IL")) %>%
+  test_coords <- tibble(neighborhood = sample_neighborhoods) |>
+    mutate(full_address = paste(neighborhood, "Chicago, IL")) |>
     geocode(full_address, method = 'osm', lat = latitude, long = longitude)
   
   print(test_coords)
@@ -1011,51 +1011,51 @@ scrape_single_article <- function(article_url) {
     article_page <- read_html(article_url)
     
     # Extract detailed article information
-    headline <- article_page %>%
-      html_elements("h1.entry-title, .entry-header h1, h1") %>%
-      html_text(trim = TRUE) %>%
+    headline <- article_page |>
+      html_elements("h1.entry-title, .entry-header h1, h1") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Full article text (multiple paragraphs)
-    article_text <- article_page %>%
-      html_elements(".entry-content p, .post-content p, .content p") %>%
-      html_text(trim = TRUE) %>%
+    article_text <- article_page |>
+      html_elements(".entry-content p, .post-content p, .content p") |>
+      html_text(trim = TRUE) |>
       paste(collapse = " ")
     
     # Author information
-    author <- article_page %>%
-      html_elements(".author-name, .byline, .entry-author, .author") %>%
-      html_text(trim = TRUE) %>%
+    author <- article_page |>
+      html_elements(".author-name, .byline, .entry-author, .author") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Publication date
-    pub_date <- article_page %>%
-      html_elements(".entry-date, .published, time, .post-date") %>%
-      html_text(trim = TRUE) %>%
+    pub_date <- article_page |>
+      html_elements(".entry-date, .published, time, .post-date") |>
+      html_text(trim = TRUE) |>
       first()
     
     # Categories/neighborhoods using the working method
-    neighborhoods <- article_page %>%
-      html_elements(".cat-links a") %>%
-      html_text(trim = TRUE) %>%
+    neighborhoods <- article_page |>
+      html_elements(".cat-links a") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Tags using the working method  
-    tags <- article_page %>%
-      html_elements("a[href*='/tag/']") %>%
-      html_text(trim = TRUE) %>%
+    tags <- article_page |>
+      html_elements("a[href*='/tag/']") |>
+      html_text(trim = TRUE) |>
       paste(collapse = ", ")
     
     # Featured image
-    featured_image <- article_page %>%
-      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") %>%
-      html_attr("src") %>%
+    featured_image <- article_page |>
+      html_elements(".featured-image img, .post-thumbnail img, .wp-post-image") |>
+      html_attr("src") |>
       first()
     
     # Meta description
-    meta_description <- article_page %>%
-      html_elements("meta[name='description']") %>%
-      html_attr("content") %>%
+    meta_description <- article_page |>
+      html_elements("meta[name='description']") |>
+      html_attr("content") |>
       first()
     
     # Word count
@@ -1102,15 +1102,15 @@ get_article_links <- function(homepage_url = "https://blockclubchicago.org/", ma
   homepage <- read_html(homepage_url)
   
   # Use the working method from Method 2
-  article_links <- homepage %>%
-    html_elements("article") %>%
+  article_links <- homepage |>
+    html_elements("article") |>
     map_chr(~ {
-      .x %>%
-        html_elements(".entry-title a, h2 a, h1 a") %>%
-        html_attr("href") %>%
+      .x |>
+        html_elements(".entry-title a, h2 a, h1 a") |>
+        html_attr("href") |>
         first()
-    }) %>%
-    na.omit() %>%
+    }) |>
+    na.omit() |>
     unique()
   
   if (!is.null(max_articles)) {
@@ -1203,8 +1203,8 @@ get_chicago_neighborhood_coords <- function(neighborhood) {
     "South Chicago", 41.7398, -87.5598
   )
   
-  result <- coords_lookup %>%
-    filter(str_to_lower(neighborhood) == str_to_lower(!!neighborhood)) %>%
+  result <- coords_lookup |>
+    filter(str_to_lower(neighborhood) == str_to_lower(!!neighborhood)) |>
     select(latitude, longitude)
   
   if (nrow(result) == 0) {
@@ -1220,12 +1220,12 @@ get_chicago_neighborhood_coords <- function(neighborhood) {
 add_geocoding_to_articles <- function(articles_df) {
   
   # Step 1: Get unique neighborhoods from the neighborhoods column
-  unique_neighborhoods <- articles_df %>%
-    filter(!is.na(neighborhoods)) %>%
-    separate_rows(neighborhoods, sep = ", ") %>%
-    mutate(neighborhoods = str_trim(neighborhoods)) %>%
-    filter(neighborhoods != "" & !is.na(neighborhoods)) %>%
-    distinct(neighborhoods) %>%
+  unique_neighborhoods <- articles_df |>
+    filter(!is.na(neighborhoods)) |>
+    separate_rows(neighborhoods, sep = ", ") |>
+    mutate(neighborhoods = str_trim(neighborhoods)) |>
+    filter(neighborhoods != "" & !is.na(neighborhoods)) |>
+    distinct(neighborhoods) |>
     pull(neighborhoods)
   
   if (length(unique_neighborhoods) == 0) {
@@ -1238,7 +1238,7 @@ add_geocoding_to_articles <- function(articles_df) {
   cat("Found", length(unique_neighborhoods), "unique neighborhoods to geocode\n")
   
   # Step 2: Create neighborhood lookup with hardcoded coordinates only
-  neighborhood_coords <- tibble(neighborhood = unique_neighborhoods) %>%
+  neighborhood_coords <- tibble(neighborhood = unique_neighborhoods) |>
     mutate(
       coords = map(neighborhood, ~ {
         cat("Getting coords for:", .x, "\n")
@@ -1253,20 +1253,20 @@ add_geocoding_to_articles <- function(articles_df) {
         cat("  ✗ No coords available\n")
         return(tibble(latitude = NA, longitude = NA))
       })
-    ) %>%
-    unnest(coords) %>%
+    ) |>
+    unnest(coords) |>
     select(neighborhood, latitude, longitude)
   
   successful_geocodes <- sum(!is.na(neighborhood_coords$latitude))
   cat("Successfully found coords for", successful_geocodes, "out of", nrow(neighborhood_coords), "neighborhoods\n")
   
   # Step 3: Join coordinates back to articles (using first neighborhood for coordinates)
-  articles_with_coords <- articles_df %>%
+  articles_with_coords <- articles_df |>
     mutate(
-      first_neighborhood = str_extract(neighborhoods, "^[^,]+") %>% str_trim()
-    ) %>%
-    left_join(neighborhood_coords, by = c("first_neighborhood" = "neighborhood")) %>%
-    select(-first_neighborhood) %>%
+      first_neighborhood = str_extract(neighborhoods, "^[^,]+") |> str_trim()
+    ) |>
+    left_join(neighborhood_coords, by = c("first_neighborhood" = "neighborhood")) |>
+    select(-first_neighborhood) |>
     rename(
       neighborhood_lat = latitude,
       neighborhood_lng = longitude
@@ -1290,7 +1290,7 @@ scrape_blockclub_complete <- function(max_articles = NULL) {
   articles_with_coords <- add_geocoding_to_articles(all_articles)
   
   # Step 4: Ensure exact column order and names
-  final_df <- articles_with_coords %>%
+  final_df <- articles_with_coords |>
     select(
       url,
       headline, 

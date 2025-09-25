@@ -53,31 +53,31 @@ articles_method1 <- webpage |>
   map_dfr(~ {
     article_node <- .x
     
-    # extract headline from within this article
+    # extract headline from within article
     headline <- article_node |>
       html_elements(".entry-title, .post-title, h1, h2, h3") |>
       html_text(trim = TRUE) |>
       first() # take first match
     
-    # Extract link from within this article
+    # extract link from within article
     link <- article_node |>
       html_elements("a") |>
       html_attr("href") |>
       first() # take first link
     
-    # Extract category/neighborhood from within this article
+    # extract category/neighborhood from within article
     category <- article_node |>
       html_elements("a[rel='category tag'], .category, .cat-links a") |>
       html_text(trim = TRUE) |>
       paste(collapse = ", ") # join multiple categories
     
-    # Extract author from within this article
+    # extract author from within article
     author <- article_node |>
       html_elements(".byline, .author, .by-author") |>
       html_text(trim = TRUE) |>
       first()
     
-    # Return as tibble row
+    # return as tibble row
     tibble(
       headline = ifelse(length(headline) == 0, NA, headline),
       link = ifelse(length(link) == 0, NA, link),
@@ -89,27 +89,15 @@ articles_method1 <- webpage |>
 print("Method 1 - Article container approach:")
 print(articles_method1)
 
+# METHOD 2 ----
 all_categories <- webpage |>
   html_elements("a[rel='category tag']") |>
   html_text(trim = TRUE)
 
-library(rvest)
-library(dplyr)
-
 # URL of the newspaper site
 url <- "https://blockclubchicago.org/"
 
-# Read the HTML content
-webpage <- read_html(url)
-
-library(rvest)
-library(dplyr)
-library(purrr)
-
-# URL of the newspaper site
-url <- "https://blockclubchicago.org/"
-
-# Read the HTML content
+# read the HTML content
 webpage <- read_html(url)
 
 # Method 1: Use the .cat-links class (WordPress standard)
@@ -219,7 +207,7 @@ articles_alt <- webpage |>
 cat("Articles found with class-based categories:", nrow(articles_alt), "\n")
 print(articles_alt)
 
-# Method 4: Direct category link extraction
+# count links ----
 cat("\n=== METHOD 4: Direct category links ===\n")
 category_links <- webpage |>
   html_elements("a[href*='/category/']") |>
@@ -249,7 +237,7 @@ cat("Method 4 (direct links): ", nrow(category_links), " unique category links\n
 
 
 ##############
-
+# method 4 ----
 #' Scrape Block Club Chicago articles with categories/neighborhoods
 #' @param url The URL to scrape (defaults to homepage)
 #' @return A tibble with article data including neighborhoods/categories
@@ -389,12 +377,7 @@ articles_with_coords
 write_csv(articles_with_coords, "blockclub_articles.csv")
 
 
-########### ---- streamlined working ----
-library(rvest)
-library(dplyr)
-library(purrr)
-library(readr)
-
+# streamlined working ----
 #' Scrape full content from a single Block Club Chicago article
 #' @param article_url URL of the individual article
 #' @return A tibble with full article data
@@ -600,11 +583,11 @@ test_articles <- run_complete_scrape(max_articles = 5, save_file = "test_article
 
 # When ready, scrape everything (this will take a while!)
 # cat("=== SCRAPING ALL ARTICLES (THIS WILL TAKE TIME!) ===\n")
-# all_articles <- run_complete_scrape(save_file = "blockclub_complete_dataset.csv")
+all_articles <- run_complete_scrape(save_file = "blockclub_complete_dataset.csv")
 
 cat("\n🎉 Ready to scrape! Uncomment the last lines to scrape all articles.\n")
 # Scrape ALL articles (this will take time!)
-#all_articles <- run_complete_scrape(save_file = "blockclub_complete_dataset.csv")
+all_articles <- run_complete_scrape(save_file = "blockclub_complete_dataset.csv")
 
 # Test with just 5 articles
 test_articles <- run_complete_scrape(max_articles = 5, save_file = "test_articles.csv")

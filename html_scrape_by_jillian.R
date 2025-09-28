@@ -1,4 +1,4 @@
-# ROUGH DRAFT WEB SCRAPE ----
+# ROUGH DRAFT HTML WEB SCRAPE ----
 
 # load packages ----
 library(rvest)

@@ -44,4 +44,3 @@ all_posts_df <- get_all_posts("https://blockclubchicago.org")
 saveRDS(all_posts_df, here("data", "api_scrape.rds"))
 
 all_posts_df <- readRDS(here("data", "api_scrape.rds"))
-head(all_posts_df)

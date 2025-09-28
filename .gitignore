@@ -4,4 +4,4 @@
 .Ruserdata
 
 # Ignore all RDS files in the data folder
-data/*.rds
+knight-lab/data/*.rds

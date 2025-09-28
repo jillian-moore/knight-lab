@@ -1,6 +1,6 @@
-# ROUGH DRAFT WEB SCRAPE
+# ROUGH DRAFT WEB SCRAPE ----
 
-# load packages
+# load packages ----
 library(rvest)
 library(dplyr)
 library(tidygeocoder)
@@ -162,20 +162,57 @@ scrape_all_articles <- function(homepage_url = "https://blockclubchicago.org/", 
 }
 
 # add geocoding ----
+# Enhanced add_geocoding function ----
 add_geocoding <- function(articles_df) {
   
   cat("\n=== STEP 3: Adding geocoding for neighborhoods ===\n")
   
-  # extract unique neighborhoods from categories
-  unique_neighborhoods <- articles_df |>
-    filter(!is.na(categories)) |>
-    separate_rows(categories, sep = ", ") |>
-    mutate(categories = str_trim(categories)) |>
-    filter(categories != "" & !is.na(categories)) |>
-    distinct(categories) |>
-    pull(categories)
+  # create a list of known Chicago neighborhoods for matching
+  chicago_neighborhoods <- c(
+    "Albany Park", "Andersonville", "Archer Heights", "Armour Square", "Ashburn",
+    "Auburn Gresham", "Austin", "Avalon Park", "Avondale", "Belmont Cragin",
+    "Beverly", "Bridgeport", "Brighton Park", "Bronzeville", "Bucktown",
+    "Burnside", "Calumet Heights", "Chatham", "Chinatown", "Clearing",
+    "Douglas", "Dunning", "East Garfield Park", "East Side", "Edgewater",
+    "Edison Park", "Englewood", "Forest Glen", "Fuller Park", "Gage Park",
+    "Garfield Ridge", "Grand Boulevard", "Greater Grand Crossing", "Hegewisch",
+    "Hermosa", "Humboldt Park", "Hyde Park", "Irving Park", "Jefferson Park",
+    "Kenwood", "Lake View", "Lincoln Park", "Lincoln Square", "Little Village",
+    "Logan Square", "Loop", "Lower West Side", "McKinley Park", "Montclare",
+    "Morgan Park", "Mount Greenwood", "Near North Side", "Near South Side",
+    "Near West Side", "New City", "North Center", "North Lawndale", "North Park",
+    "Norwood Park", "Oakland", "O'Hare", "Pilsen", "Portage Park", "Pullman",
+    "Riverdale", "Rogers Park", "Roseland", "South Chicago", "South Deering",
+    "South Lawndale", "South Loop", "South Shore", "Uptown", "Washington Heights",
+    "Washington Park", "West Elsdon", "West Englewood", "West Garfield Park",
+    "West Lawn", "West Pullman", "West Ridge", "West Town", "Woodlawn"
+  )
+  
+  # extract neighborhoods from article text and keep categories separate
+  articles_with_neighborhoods <- articles_df |>
+    mutate(
+      # extract first word/phrase from article text (up to first dash or punctuation)
+      first_word = str_extract(article_text, "^[A-Z][A-Za-z\\s]+?(?=\\s—|\\s-|\\.|,|\\s\\()"),
+      first_word = str_trim(first_word),
+      # use first word if it exists, otherwise use categories
+      neighborhood = ifelse(!is.na(first_word) & first_word != "", 
+                            first_word, 
+                            categories)
+    ) |>
+    # keep original categories column separate
+    select(url, headline, author, pub_date, categories, neighborhood, first_word, everything())
+  
+  # extract unique neighborhoods for geocoding (from the neighborhood column only)
+  unique_neighborhoods <- articles_with_neighborhoods |>
+    filter(!is.na(neighborhood) & neighborhood != "") |>
+    separate_rows(neighborhood, sep = ", ") |>
+    mutate(neighborhood = str_trim(neighborhood)) |>
+    filter(neighborhood != "") |>
+    distinct(neighborhood) |>
+    pull(neighborhood)
   
   cat("Found", length(unique_neighborhoods), "unique neighborhoods to geocode\n")
+  cat("Neighborhoods found:", paste(unique_neighborhoods, collapse = ", "), "\n")
   
   # create geocoding lookup table
   neighborhood_coords <- tibble(neighborhood = unique_neighborhoods) |>
@@ -194,42 +231,61 @@ add_geocoding <- function(articles_df) {
   
   cat("Starting geocoding process...\n")
   
-  # geocode with error handling
-  neighborhood_coords <- neighborhood_coords |>
-    mutate(
-      geocode_attempt = map(full_address, ~ {
-        cat("Geocoding:", .x, "\n")
-        Sys.sleep(0.5)
-        
-        tryCatch({
-          result <- geocode(.x, method = 'osm', lat = latitude, long = longitude)
-          return(result)
-        }, error = function(e) {
-          cat("  Failed:", e$message, "\n")
-          return(tibble(latitude = NA, longitude = NA))
-        })
+  # Fixed geocoding approach - batch geocode the entire dataframe
+  tryCatch({
+    neighborhood_coords <- neighborhood_coords |>
+      geocode(full_address, method = 'osm')
+  }, error = function(e) {
+    cat("Batch geocoding failed, trying individual geocoding...\n")
+    
+    # Initialize lat and long columns
+    neighborhood_coords$lat <- NA_real_
+    neighborhood_coords$long <- NA_real_
+    
+    # Geocode each address individually
+    for(i in 1:nrow(neighborhood_coords)) {
+      address <- neighborhood_coords$full_address[i]
+      cat("Geocoding:", address, "\n")
+      Sys.sleep(0.5)
+      
+      tryCatch({
+        # Create a single-row dataframe for geo()
+        temp_df <- data.frame(address = address)
+        result <- geo(temp_df, address = address, method = 'osm')
+        if(nrow(result) > 0 && !is.na(result$lat[1])) {
+          neighborhood_coords$lat[i] <- result$lat[1]
+          neighborhood_coords$long[i] <- result$long[1]
+        }
+      }, error = function(e) {
+        cat("  Failed:", e$message, "\n")
       })
-    ) |>
-    unnest(geocode_attempt) |>
-    select(neighborhood, latitude, longitude, full_address)
+    }
+  })
   
   # show geocoding results
-  successful_geocodes <- sum(!is.na(neighborhood_coords$latitude))
+  successful_geocodes <- sum(!is.na(neighborhood_coords$lat))
   cat("Successfully geocoded", successful_geocodes, "out of", nrow(neighborhood_coords), "neighborhoods\n")
   
   # join coordinates back to articles
-  articles_with_coords <- articles_df |>
-    # create a row for each article-neighborhood combination
-    separate_rows(categories, sep = ", ") |>
-    mutate(categories = str_trim(categories)) |>
-    filter(!is.na(categories) & categories != "") |>
-    # join with coordinates
-    left_join(neighborhood_coords, by = c("categories" = "neighborhood")) |>
-    # rename for clarity
+  articles_with_coords <- articles_with_neighborhoods |>
+    # Use detected neighborhood if it exists and matches, otherwise use original categories
+    mutate(
+      final_neighborhood = ifelse(!is.na(first_word) & first_word %in% chicago_neighborhoods, 
+                                  first_word,  # Use only the detected neighborhood
+                                  neighborhood) # Use original categories (may have multiple)
+    ) |>
+    # Now separate rows only if using original categories (which may have multiple neighborhoods)
+    separate_rows(final_neighborhood, sep = ", ") |>
+    mutate(final_neighborhood = str_trim(final_neighborhood)) |>
+    filter(!is.na(final_neighborhood) & final_neighborhood != "") |>
+    # join with coordinates using the final neighborhood
+    left_join(neighborhood_coords, by = c("final_neighborhood" = "neighborhood")) |>
+    # remove the original neighborhood column and rename final_neighborhood
+    select(-neighborhood) |>
     rename(
-      neighborhood = categories,
-      neighborhood_lat = latitude,
-      neighborhood_lng = longitude,
+      neighborhood = final_neighborhood,
+      neighborhood_lat = lat,
+      neighborhood_lng = long,
       neighborhood_geocoded_address = full_address
     )
   

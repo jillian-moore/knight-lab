@@ -3,7 +3,9 @@ library(httr)
 library(jsonlite)
 library(dplyr)
 library(here)
+
 # /wp-json/wp/v2/posts
+
 # scrape the REST API ----
 get_all_posts <- function(base_url, per_page = 100, max_pages = 1000, start_page = 1) {
   all_posts <- list()

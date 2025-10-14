@@ -255,18 +255,3 @@ api_clean <- api_clean |>
     id, date,
   )
 
-
-=======
-    community = case_when(
-      sub_community %in% chi_communities ~ sub_community,
-      TRUE ~ str_trim(str_extract(parsely.meta.articleSection, "^[^,]+"))
-    )
-  ) |>
-  ungroup()
-  
-
-dim(api_clean)
-
-View (api_clean)
-# 28K rows
->>>>>>> 0e1d4af65b25b1e7ca9d2ed029d99602ea3fe079

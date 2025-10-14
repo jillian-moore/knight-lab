@@ -27,6 +27,7 @@ api_clean <- api |>
       str_trim()                    
   )
 
+<<<<<<< HEAD
 # flattened neighborhood mapping ----
 neighborhood_mapping <- tribble(
   ~sub_community, ~chi_community,
@@ -151,10 +152,36 @@ neighborhood_mapping <- tribble(
     sub_community = str_to_lower(str_trim(sub_community)), 
     chi_community = str_to_lower(str_trim(chi_community))  
   )
+=======
+chi_communities <- c(
+  "Rogers Park", "West Ridge", "Uptown", "Lincoln Square", 
+  "North Center", "Lake View", "Lincoln Park", "Near North Side", 
+  "Edison Park", "Norwood Park", "Jefferson Park", "Forest Glen", 
+  "North Park", "Albany Park", "Portage Park", "Irving Park", 
+  "Dunning", "Montclare", "Belmont Cragin", "Hermosa", 
+  "Avondale", "Logan Square", "Humboldt Park", "West Town", 
+  "Austin", "West Garfield Park", "East Garfield Park", "Near West Side",
+  "North Lawndale", "South Lawndale", "Lower West Side", "Loop", 
+  "Near South Side", "Armour Square", "Douglas", "Oakland", 
+  "Fuller Park", "Grand Boulevard", "Kenwood", "Washington Park", 
+  "Hyde Park", "Woodlawn", "South Shore", "Chatham", "Avalon Park",
+  "South Chicago", "Burnside", "Calumet Heights", "Roseland", 
+  "Pullman", "South Deering", "East Side", "West Pullman", 
+  "Riverdale", "Hegewisch", "Garfield Ridge", "Archer Heights", 
+  "Brighton Park", "McKinley Park", "Bridgeport", "New City", 
+  "West Elsdon", "Gage Park", "Clearing", "West Lawn", "Chicago Lawn", 
+  "West Englewood", "Englewood", "Greater Grand Crossing", 
+  "Ashburn", "Auburn Gresham", "Beverly", "Washington Heights", 
+  "Mount Greenwood", "Morgan Park", "Jeffery Manor", "East Morgan Park", 
+  "West Morgan Park"
+)
+>>>>>>> 0e1d4af65b25b1e7ca9d2ed029d99602ea3fe079
 
 # match neighborhoods row by row using our mapping
 api_clean <- api_clean |>
+  rowwise() |>
   mutate(
+<<<<<<< HEAD
     sub_community = str_to_lower(str_trim(sub_community)),
     article_section_split = str_split(parsely.meta.articleSection, ",\\s*"),
     primary_category_split = str_split(slp_primary_category.name, ",\\s*")
@@ -229,3 +256,17 @@ api_clean <- api_clean |>
   )
 
 
+=======
+    community = case_when(
+      sub_community %in% chi_communities ~ sub_community,
+      TRUE ~ str_trim(str_extract(parsely.meta.articleSection, "^[^,]+"))
+    )
+  ) |>
+  ungroup()
+  
+
+dim(api_clean)
+
+View (api_clean)
+# 28K rows
+>>>>>>> 0e1d4af65b25b1e7ca9d2ed029d99602ea3fe079

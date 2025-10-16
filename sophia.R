@@ -1,137 +1,228 @@
 # ================================================================
-# Chicago Neighborhood Map - Dual Gradient (Functional + True Variation)
+# Chicago Map — Demographics (Green Opacity from Census) × Topic (Blue Simulated)
 # ================================================================
 
 library(shiny)
+library(leaflet)
 library(sf)
-library(ggplot2)
 library(dplyr)
-library(scales)
 library(readr)
-library(here)
 library(stringr)
+library(scales)
+library(RColorBrewer)
+library(here)
 
-# ---- 1. Load data ----
-chicago <- st_read("~/Downloads/BOUNDARIES.geojson", quiet = TRUE)
-census <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv"))
+# ================================================================
+# ---- 1. Load Data ----
+# ================================================================
+# Load chi_boundaries.csv from here() or working directory
+possible_boundaries <- c(
+  here("data", "chi_boundaries.csv"),
+  "data/chi_boundaries.csv",
+  "chi_boundaries.csv"
+)
 
-# ---- 2. Identify community column ----
-text_cols_census <- names(census)[sapply(census, is.character)]
-comm_col_guess <- text_cols_census[grepl("community|area|neigh", text_cols_census, ignore.case = TRUE)][1]
-if (is.na(comm_col_guess)) stop("❌ Could not find community/area column in census data.")
+boundaries_path <- possible_boundaries[file.exists(possible_boundaries)][1]
+if (is.na(boundaries_path)) stop("❌ Could not find chi_boundaries.csv in data folder or working directory.")
+message("✅ Using chi_boundaries from: ", boundaries_path)
 
-census <- census %>%
-  mutate(community = str_to_lower(str_trim(!!sym(comm_col_guess))))
+chi_boundaries <- read_csv(boundaries_path, show_col_types = FALSE)
 
-text_cols_geo <- names(chicago)[sapply(chicago, is.character)]
-neigh_col <- text_cols_geo[1]
-chicago <- chicago %>%
-  mutate(community = str_to_lower(str_trim(!!sym(neigh_col))))
+# Directly reference your ACS file
+census_path <- "~/Downloads/knightlab!/data/ACS_5_Year_Data_by_Community_Area_20251007.csv"
+if (!file.exists(path.expand(census_path))) stop("❌ Could not find ACS Census file at specified path.")
+message("✅ Using ACS Census file from: ", census_path)
 
-# ---- 3. Define topics and demographic variables ----
-set.seed(2025)
-topics <- c("Immigration", "Education", "Housing", "Crime", "Health",
-            "Environment", "Transportation", "Business", "Politics", "Culture")
+census_raw <- read_csv(path.expand(census_path), show_col_types = FALSE)
 
-demo_cols <- names(census)[sapply(census, is.numeric)]
-demo_cols <- setdiff(demo_cols, "community")
+# ================================================================
+# ---- 2. Clean & Prepare Census Data ----
+# ================================================================
+col_names <- c(
+  "ACS Year","Community Area",
+  "Under $25,000","$25,000 to $49,999","$50,000 to $74,999",
+  "$75,000 to $125,000","$125,000 +",
+  "Male 0 to 17","Male 18 to 24","Male 25 to 34","Male 35 to 49",
+  "Male 50 to 64","Male 65+",
+  "Female 0 to 17","Female 18 to 24","Female 25 to 34","Female 35 to 49",
+  "Female 50 to 64","Female 65 +",
+  "Total Population","White","Black or African American","American Indian or Alaska Native",
+  "Asian","Native Hawaiian or Pacific Islander","Other Race","Multiracial",
+  "White Not Hispanic or Latino","Hispanic or Latino","Record ID"
+)
 
-# ---- 4. Simulate variable topic intensity per neighborhood ----
-topic_data <- expand.grid(
-  community = unique(chicago$community),
-  topic = topics
-) %>%
-  mutate(
-    # topic intensity depends on spatial order — creates regional gradient
-    articles = runif(n(), 0, 1) * (rank(community) / length(unique(community))) +
-      rnorm(n(), 0, 0.1)
-  )
-
-# ---- 5. Blend color function ----
-blend_color <- function(x, y) {
-  x[is.na(x)] <- 0
-  y[is.na(y)] <- 0
-  
-  x <- rescale(x, to = c(0, 1))
-  y <- rescale(y, to = c(0, 1))
-  
-  blend_intensity <- (x + y) / 2
-  
-  # vivid pastel gradient yellow → green → blue
-  col_fun <- colorRamp(c("#FFFF00", "#00FF00", "#0000FF"))
-  base_rgb <- col_fun(blend_intensity) / 255
-  
-  # pastel effect
-  pastel_rgb <- base_rgb * 0.9 + 0.1
-  rgb(pastel_rgb[, 1], pastel_rgb[, 2], pastel_rgb[, 3])
+if (ncol(census_raw) == length(col_names)) {
+  names(census_raw) <- col_names
 }
 
+census <- census_raw %>%
+  mutate(across(-`Community Area`,
+                ~ suppressWarnings(as.numeric(str_replace_all(.x, "[^0-9.-]", ""))))) %>%
+  mutate(community = str_to_lower(str_trim(`Community Area`)))
+
 # ================================================================
-# ---- 6. Shiny UI ----
+# ---- 3. Prepare Shape Data ----
+# ================================================================
+chicago <- chi_boundaries %>%
+  mutate(community = str_to_lower(str_trim(COMMUNITY)))
+
+if (!"the_geom" %in% names(chicago)) {
+  stop("❌ chi_boundaries.csv must include a 'the_geom' column containing WKT geometry.")
+}
+
+# Convert to sf
+chicago <- st_as_sf(chicago, wkt = "the_geom", crs = 4326)
+
+# Merge
+chicago_data <- chicago %>%
+  left_join(census, by = "community")
+
+# ================================================================
+# ---- 4. Simulated Blue Layer ----
+# ================================================================
+set.seed(2025)
+topics <- c("Immigration","Education","Housing","Crime","Health",
+            "Environment","Transportation","Business","Politics","Culture")
+
+random_blue_values <- tibble(
+  community = unique(chicago$community),
+  blue_value = runif(length(unique(chicago$community)), 0, 1)^2
+)
+
+blue_choices <- c("None", topics)
+
+# ================================================================
+# ---- 5. UI ----
 # ================================================================
 ui <- fluidPage(
-  titlePanel("🟩 Chicago Neighborhoods: Topic × Demographic Blend"),
+  titlePanel("Chicago Map — Demographics × Topics"),
   
   sidebarLayout(
     sidebarPanel(
-      selectInput("selected_topic", "Select Topic (Blue):",
-                  choices = topics, selected = "Housing"),
-      selectInput("selected_demo", "Select Demographic (Yellow):",
-                  choices = demo_cols, selected = demo_cols[1]),
-      br(),
-      helpText("🟨 = High demographic | 🟦 = Many topic articles | 🟩 = Both high")
+      selectInput("blue_var", "Select Topic Category:",
+                  choices = blue_choices, selected = "None"),
+      
+      selectInput(
+        "demo_var", "Select Demographic:",
+        choices = c(
+          "None" = "None",
+          "Race / Ethnicity" = c(
+            "White",
+            "Black or African American",
+            "American Indian or Alaska Native",
+            "Asian",
+            "Native Hawaiian or Pacific Islander",
+            "Other Race",
+            "Multiracial",
+            "Hispanic or Latino"
+          ),
+          "Income" = c(
+            "Under $25,000",
+            "$25,000 to $49,999",
+            "$50,000 to $74,999",
+            "$75,000 to $125,000",
+            "$125,000 +"
+          ),
+          "Age (Male)" = c(
+            "Male 0 to 17","Male 18 to 24","Male 25 to 34",
+            "Male 35 to 49","Male 50 to 64","Male 65+"
+          ),
+          "Age (Female)" = c(
+            "Female 0 to 17","Female 18 to 24","Female 25 to 34",
+            "Female 35 to 49","Female 50 to 64","Female 65 +"
+          )
+        ),
+        selected = "None"
+      )
     ),
-    
-    mainPanel(
-      plotOutput("mapPlot", height = "700px")
-    )
+    mainPanel(leafletOutput("map", height = "800px"))
   )
 )
 
 # ================================================================
-# ---- 7. Shiny Server ----
+# ---- 6. Helpers ----
+# ================================================================
+safe_rescale <- function(x) {
+  if (all(is.na(x)) || length(unique(na.omit(x))) <= 1) return(rep(0, length(x)))
+  rng <- range(x, na.rm = TRUE)
+  if (rng[1] == rng[2]) return(rep(0.5, length(x)))
+  rescale(x, to = c(0, 1))
+}
+
+# ================================================================
+# ---- 7. Server ----
 # ================================================================
 server <- function(input, output, session) {
-  output$mapPlot <- renderPlot({
-    selected_topic <- input$selected_topic
-    selected_demo  <- input$selected_demo
+  
+  output$map <- renderLeaflet({
+    leaflet(chicago_data) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = -87.65, lat = 41.84, zoom = 10)
+  })
+  
+  observe({
+    df <- chicago_data
+    n <- nrow(df)
     
-    # ---- Filter ----
-    topic_sel <- topic_data %>% filter(topic == selected_topic)
-    demo_sel  <- census %>% select(community, value = all_of(selected_demo))
+    fill_colors <- rep("#D9D9D9", n)
+    fill_opacity <- rep(0.8, n)
     
-    # ---- Merge ----
-    map_data <- chicago %>%
-      left_join(topic_sel, by = "community") %>%
-      left_join(demo_sel, by = "community") %>%
-      mutate(
-        articles = ifelse(is.na(articles), 0, articles),
-        value = ifelse(is.na(value), 0, value),
-        # Ensure nonconstant variation
-        x_scaled = rescale(articles, to = c(0, 1)),
-        y_scaled = rescale(value, to = c(0, 1)),
-        blend = mapply(blend_color, x_scaled, y_scaled)
-      )
+    # ---- BLUE (simulated topic) ----
+    blue_vals <- random_blue_values$blue_value[match(df$community, random_blue_values$community)]
+    blue_palette <- colorRampPalette(brewer.pal(9, "Blues"))(100)
+    blue_colors <- blue_palette[as.numeric(cut(blue_vals, breaks = 100))]
     
-    # ---- Plot ----
-    ggplot(map_data) +
-      geom_sf(aes(fill = blend), color = "white", size = 0.25) +
-      scale_fill_identity() +
-      labs(
-        title = paste0("Chicago Neighborhoods — ", selected_topic, " × ", selected_demo),
-        subtitle = "🟨 Yellow = Demographic | 🟦 Blue = Topic | 🟩 Green = Overlap",
-        caption = "Block Club Chicago (topics simulated) + Census demographics"
-      ) +
-      theme_minimal() +
-      theme(
-        plot.title = element_text(size = 18, face = "bold"),
-        plot.subtitle = element_text(size = 13),
-        legend.position = "none"
+    if (input$blue_var != "None") {
+      fill_colors <- blue_colors
+    }
+    
+    # ---- GREEN (from Census) ----
+    if (!is.null(input$demo_var) && input$demo_var != "None" && input$demo_var %in% names(df)) {
+      g_vals <- df[[input$demo_var]]
+      
+      if (!is.numeric(g_vals)) {
+        g_vals <- suppressWarnings(as.numeric(str_replace_all(as.character(g_vals), "[^0-9.-]", "")))
+      }
+      
+      if (!all(is.na(g_vals))) {
+        g_scaled <- safe_rescale(g_vals)
+        green_base <- "#00FF00"
+        green_opacity <- g_scaled * 0.8 + 0.1
+        
+        if (input$blue_var != "None") {
+          blended_colors <- mapply(function(b_col, g_op) {
+            b_rgb <- col2rgb(b_col) / 255
+            g_rgb <- col2rgb(green_base) / 255
+            mixed <- (1 - g_op) * b_rgb + g_op * g_rgb
+            rgb(mixed[1], mixed[2], mixed[3])
+          }, fill_colors, green_opacity, SIMPLIFY = TRUE)
+          
+          fill_colors <- blended_colors
+          fill_opacity <- rep(0.9, n)
+        } else {
+          fill_colors <- rep(green_base, n)
+          fill_opacity <- green_opacity
+        }
+      }
+    }
+    
+    # ---- Render ----
+    leafletProxy("map", data = df) %>%
+      clearShapes() %>%
+      addPolygons(
+        fillColor = fill_colors,
+        color = "#555",
+        weight = 1,
+        opacity = 1,
+        fillOpacity = fill_opacity,
+        label = ~paste0("<b>", str_to_title(community), "</b><br>",
+                        "🟩 ", input$demo_var, ": ", prettyNum(df[[input$demo_var]], big.mark = ","), "<br>",
+                        "🟦 ", input$blue_var)
       )
   })
 }
 
 # ================================================================
-# ---- 8. Run App ----
+# ---- 8. Run ----
 # ================================================================
 shinyApp(ui, server)

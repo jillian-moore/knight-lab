@@ -1,8 +1,21 @@
+
+
+
+
 # 
 # colnames(api)
+# # 
+# api1 <- api %>%
+#   filter(id == 928341)
+# api1$content.rendered 
 # 
-# api1 <- api %>% 
-#   slice_head(n = 1)
+#   
+
+View (api)
+
+api_to_csv <- api$slug %>% 
+  slice_head (n = 100) 
+
 # 
 # extract_locations_llm (api1$content.rendered, model = "llama3:8b")
 # 
@@ -35,7 +48,79 @@ article2 <- readRDS("data/api_scrape.rds") %>%
 gaz <- read_csv("data/chi_boundaries.csv") %>%
   select (COMMUNITY, AREA_NUM_1)
 
-View (article2)
+find_slug_from_html <- function(html_frag) {
+  doc <- read_html(paste0("<div>", html_frag %||% "", "</div>"))
+  
+  # all top-level paragraphs
+  ps  <- html_elements(doc, xpath = "//p[not(ancestor::figure) and not(ancestor::aside)]")
+  if (length(ps) == 0) return(NA_character_)
+  
+  promo_rx <- regex(
+    paste(
+      "sign up", "newsletter", "subscribe", "donate", "support our work",
+      "advertisement", "sponsor", "daily recaps", "this is part of our series",
+      sep = "|"
+    ),
+    ignore_case = TRUE
+  )
+  
+  slug_rx <- "^\\s*([A-Z][A-Z\\s&\\-']{2,}?)\\s+[—–-]\\s+"
+  
+  # Walk paragraphs: skip promos; return first slug match
+  for (p in ps) {
+    t <- html_text2(p)
+    if (str_detect(t, promo_rx)) next
+    m <- str_match(t, slug_rx)
+    if (!is.na(m[1,2])) return(str_squish(m[1,2]))
+  }
+  
+  # Fallback: try whole text if no <p> matched
+  all_txt <- html_text2(doc)
+  m <- str_match(all_txt, slug_rx)
+  ifelse(is.na(m[1,2]), NA_character_, str_squish(m[1,2]))
+}
+# 2) Optional: get the article text with promos removed (useful for your LLM step)
+clean_body_no_promo <- function(html_frag) {
+  doc <- read_html(paste0("<div>", html_frag %||% "", "</div>"))
+  ps  <- html_elements(doc, xpath = "//p[not(ancestor::figure) and not(ancestor::aside)]")
+  txt <- html_text2(ps)
+  
+  promo_rx <- regex(
+    paste(
+      "sign up", "newsletter", "subscribe", "donate", "support our work",
+      "advertisement", "sponsor", "daily recaps", "this is part of our series",
+      sep = "|"
+    ),
+    ignore_case = TRUE
+  )
+  
+  # drop leading promos only
+  i <- 1L; n <- length(txt)
+  while (i <= n && str_detect(txt[i], promo_rx)) i <- i + 1L
+  
+  kept <- if (i <= n) txt[i:n] else character()
+  out  <- str_squish(paste(kept, collapse = " "))
+  
+  # remove the leading slug "CHICAGO — " etc. from body copy if present
+  out <- str_replace(out, "^\\s*[A-Z][A-Z\\s&\\-']{2,}?\\s+[—–-]\\s+", "")
+  
+  out
+}
+
+# 3) Apply to your data
+api_clean <- article2 %>%
+  mutate(
+    sub_community = map_chr(content.rendered, find_slug_from_html),
+    article_text  = map_chr(content.rendered, clean_body_no_promo)
+  )
+
+# Peek
+api_clean %>% select(sub_community, article_text) %>% head()
+View (api_clean)
+
+#__________________________________________________
+
+
 
 # Make an article id and a compact, lowercased text snippet for matching
 articles <- article2 %>%
@@ -184,7 +269,7 @@ needs_llm <- combined %>% filter(source == "needs_llm")
 
 if (nrow(needs_llm) > 0) {
   needs_llm <- needs_llm %>%
-    mutate(min_text = pick_locationy(article_text))
+    mutate(min_text = purrr::map_chr(article_text, pick_locationy))
   
   # Run Ollama on the minimal text, safely
   llm_res <- purrr::map(needs_llm$min_text, function(txt) {
@@ -213,4 +298,4 @@ if (nrow(needs_llm) > 0) {
     dplyr::select(-communities_llm, -confidence)
 }
 
-View (combined)
+View (needs_llm)

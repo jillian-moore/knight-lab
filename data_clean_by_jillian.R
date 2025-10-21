@@ -151,7 +151,7 @@ neighborhood_mapping <- tribble(
     sub_community = str_to_lower(str_trim(sub_community)), 
     chi_community = str_to_lower(str_trim(chi_community))  
   )
-=======
+
 chi_communities <- c(
   "Rogers Park", "West Ridge", "Uptown", "Lincoln Square", 
   "North Center", "Lake View", "Lincoln Park", "Near North Side", 

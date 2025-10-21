@@ -27,7 +27,6 @@ api_clean <- api |>
       str_trim()                    
   )
 
-<<<<<<< HEAD
 # flattened neighborhood mapping ----
 neighborhood_mapping <- tribble(
   ~sub_community, ~chi_community,
@@ -175,13 +174,11 @@ chi_communities <- c(
   "Mount Greenwood", "Morgan Park", "Jeffery Manor", "East Morgan Park", 
   "West Morgan Park"
 )
->>>>>>> 0e1d4af65b25b1e7ca9d2ed029d99602ea3fe079
 
 # match neighborhoods row by row using our mapping
 api_clean <- api_clean |>
   rowwise() |>
   mutate(
-<<<<<<< HEAD
     sub_community = str_to_lower(str_trim(sub_community)),
     article_section_split = str_split(parsely.meta.articleSection, ",\\s*"),
     primary_category_split = str_split(slp_primary_category.name, ",\\s*")

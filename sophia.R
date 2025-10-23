@@ -55,7 +55,15 @@ census <- census_raw %>%
                 ~ suppressWarnings(as.numeric(str_replace_all(
                   as.character(.x), "[^0-9\\.\\-]", ""
                 ))))) %>%
-  mutate(community = str_to_lower(str_trim(`Community Area`)))
+  mutate(community = str_to_lower(str_trim(`Community Area`))) |> 
+  mutate(
+    `0 to 17` = `Male 0 to 17` + `Female 0 to 17`,
+    `18 to 24` = `Male 18 to 24` + `Female 18 to 24`,
+    `25 to 34` = `Male 25 to 34` + `Female 25 to 34`,
+    `35 to 49` = `Male 35 to 49` + `Female 35 to 49`,
+    `50 to 64` = `Male 50 to 64` + `Female 50 to 64`,
+    `65+` = `Male 65+` + `Female 65+`
+  )
 
 # ================================================================
 # ---- 3. Prepare Shape ----

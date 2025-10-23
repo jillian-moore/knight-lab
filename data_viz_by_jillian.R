@@ -11,6 +11,7 @@ library(scales)
 library(RColorBrewer)
 library(lubridate)
 library(here)
+library(tidyr)
 
 # load data ----
 source("data_clean_by_jillian.R")
@@ -67,15 +68,35 @@ topics <- c(
   "Transportation & Infrastructure"
 )
 
+# aggregate api data by community
+api_summary <- api_long |>
+  group_by(community) |>
+  summarise(
+    article_count = n(),
+    .groups = "drop"
+  )
+
 # merge data ----
 full_data <- chi_boundaries |>
-  left_join(api_long, by = "community") |> 
-  mutate(random_topic = sample(topics, size = n(), replace = TRUE))
+  left_join(api_summary, by = "community") |> 
+  mutate(
+    article_count = replace_na(article_count, 0),
+    random_topic = sample(topics, size = n(), replace = TRUE)
+  )
 
-# DEMOGRAPHIC CHOICES ----
+# helper function for rescaling ----
+safe_rescale <- function(x, to = c(0, 1), from = range(x, na.rm = TRUE, finite = TRUE)) {
+  if (all(is.na(x)) || length(unique(x[!is.na(x)])) <= 1) {
+    return(rep(0.5, length(x)))
+  }
+  scales::rescale(x, to = to, from = from)
+}
+
+# demographic titles ----
 demo_choices <- c(
   "None" = "None",
-  # Race / Ethnicity
+  
+  # race
   "White" = "white",
   "Black or African American" = "black_or_african_american",
   "American Indian or Alaska Native" = "american_indian_or_alaska_native",
@@ -84,13 +105,15 @@ demo_choices <- c(
   "Other Race" = "other_race",
   "Multiracial" = "multiracial",
   "Hispanic or Latino" = "hispanic_or_latino",
-  # Income
+  
+  # income
   "Under $25,000" = "under_25_000",
   "$25,000 to $49,999" = "x25_000_to_49_999",
   "$50,000 to $74,999" = "x50_000_to_74_999",
   "$75,000 to $125,000" = "x75_000_to_125_000",
   "$125,000 +" = "x125_000_plus",
-  # Age
+  
+  # age
   "0 to 17" = "age_0_17",
   "18 to 24" = "age_18_24",
   "25 to 34" = "age_25_34",
@@ -104,14 +127,18 @@ ui <- fluidPage(
   titlePanel("Chicago Neighborhood Map: Topics vs Demographics"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("blue_var", "Select Topic (Blue):", choices = c("None", topics), selected = "None"),
+      selectInput("blue_var", "Select Topic (Blue):", 
+                  choices = c("None", topics), 
+                  selected = "None"),
       selectInput("demo_var", "Select Demographic (Yellow):",
                   choices = demo_choices,
-                  selected = "None"
-      ),
+                  selected = "None"),
       sliderInput(
-        "month_slider", "Select Month (simulated):",
-        min = 1, max = 12, value = 1, step = 1,
+        "month_slider", "Select Month:",
+        min = as.Date("2020-01-01"), 
+        max = as.Date("2030-12-01"),
+        value = as.Date("2020-01-01"),
+        step = 31,
         animate = animationOptions(interval = 2000, loop = TRUE)
       ),
       tags$div(style="margin-top:20px;font-size:12px;",
@@ -128,14 +155,10 @@ ui <- fluidPage(
   )
 )
 
-# Helper ----
-safe_rescale <- function(x) {
-  if (all(is.na(x)) || length(unique(na.omit(x))) <= 1) return(rep(0.2, length(x)))
-  rescale(x, to = c(0, 1))
-}
-
-# Server ----
+# server ----
 server <- function(input, output, session) {
+  
+  # initial map
   output$map <- renderLeaflet({
     leaflet(full_data) |>
       addProviderTiles(providers$CartoDB.Positron) |>
@@ -146,42 +169,46 @@ server <- function(input, output, session) {
     df <- full_data
     n <- nrow(df)
     
-    # ---- Simulated BLUE layer (topic intensity) ----
-    set.seed(as.integer(as.numeric(input$month_slider) %% 1e6))
-    blue_vals <- runif(n, 0, 1)
-    blue_palette <- colorRampPalette(brewer.pal(9, "Blues"))(100)
-    blue_colors <- blue_palette[as.numeric(cut(blue_vals, breaks = 100))]
-    fill_colors <- rep("#D9D9D9", n)
-    fill_opacity <- rep(0.8, n)
-    if (input$blue_var != "None") fill_colors <- blue_colors
+    # blue: topic intensity ----
+    if (input$blue_var != "None") {
+      # use random_topic for demonstration
+      topic_palette <- colorRampPalette(brewer.pal(9, "Blues"))(length(topics))
+      names(topic_palette) <- topics
+      fill_colors <- topic_palette[df$random_topic]
+    } else {
+      fill_colors <- rep("#D9D9D9", n)
+    }
     
-    # ---- YELLOW (Census / demographic) ----
+    fill_opacity <- rep(0.8, n)
+    
+    # yellow: demographic intensity ----
     if (input$demo_var != "None" && input$demo_var %in% names(df)) {
       g_vals <- suppressWarnings(as.numeric(df[[input$demo_var]]))
       g_vals[is.na(g_vals)] <- median(g_vals, na.rm = TRUE)
       g_scaled <- safe_rescale(g_vals)
       
       yellow_base <- "#FFD700"
-      yellow_opacity <- g_scaled * 0.8 + 0.1
+      yellow_intensity <- g_scaled * 0.8 + 0.1
       
       if (input$blue_var != "None") {
-        blended_colors <- mapply(function(b_col, y_op) {
-          b_rgb <- col2rgb(b_col)/255
-          y_rgb <- col2rgb(yellow_base)/255
-          mixed <- (1 - y_op) * b_rgb + y_op * y_rgb
+        # blend blue + yellow
+        blended_colors <- sapply(seq_along(fill_colors), function(i) {
+          b_rgb <- col2rgb(fill_colors[i]) / 255
+          y_rgb <- col2rgb(yellow_base) / 255
+          mixed <- (1 - yellow_intensity[i]) * b_rgb + yellow_intensity[i] * y_rgb
           rgb(mixed[1], mixed[2], mixed[3])
-        }, fill_colors, yellow_opacity, SIMPLIFY = TRUE)
+        })
         fill_colors <- blended_colors
         fill_opacity <- rep(0.9, n)
       } else {
         fill_colors <- rep(yellow_base, n)
-        fill_opacity <- yellow_opacity
+        fill_opacity <- yellow_intensity
       }
     } else {
       fill_opacity <- ifelse(input$blue_var == "None", 0.6, 0.8)
     }
     
-    # ---- Render polygons ----
+    # render polygons ----
     leafletProxy("map", data = df) |>
       clearShapes() |>
       addPolygons(
@@ -189,7 +216,7 @@ server <- function(input, output, session) {
         color = "#555", weight = 1,
         fillOpacity = fill_opacity,
         label = ~paste0("<b>", str_to_title(community), "</b><br>",
-                        "🟦 Topic: ", input$blue_var, "<br>🟨 Demographic: ",
+                        "🟦 Topic: ", random_topic, "<br>🟨 Demographic: ",
                         ifelse(input$demo_var == "None", "None", 
                                names(demo_choices)[demo_choices == input$demo_var])),
         labelOptions = labelOptions(direction = "auto", textsize = "12px", sticky = TRUE)
@@ -197,5 +224,5 @@ server <- function(input, output, session) {
   })
 }
 
-# Run ----
+# run app ----
 shinyApp(ui, server)

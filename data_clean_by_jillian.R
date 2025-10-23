@@ -59,6 +59,7 @@ neighborhood_mapping <- tribble(
   "Rogers Park", "Rogers Park",
   "Edgewater", "Edgewater",
   "Uptown", "Uptown",
+  "Bowmanville", "Lincoln Square",
   "Lincoln Square", "Lincoln Square",
   "Andersonville", "Lincoln Square",
   "Ravenswood", "Lincoln Square",
@@ -96,6 +97,7 @@ neighborhood_mapping <- tribble(
   
   # Central
   "Loop", "Loop",
+  "City Hall", "Loop",
   "Downtown", "Loop",
   "South Loop", "Loop",
   "Near South Side", "Near South Side",
@@ -248,7 +250,5 @@ api_clean <- api_clean |>
     neighborhood2 = map_chr(matched_neighborhoods, ~{if(length(.x) >= 2) .x[2] else NA_character_}),
     neighborhood3 = map_chr(matched_neighborhoods, ~{if(length(.x) >= 3) .x[3] else NA_character_})
   ) |> 
-  select(
-    id, date,
-  )
+  mutate(neighborhood1 = replace_na(neighborhood1, "chicago"))
 

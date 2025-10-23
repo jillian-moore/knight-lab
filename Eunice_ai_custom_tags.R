@@ -42,6 +42,8 @@ library(rvest)
 article2 <- readRDS("data/api_scrape.rds") %>% 
   slice_head(n = 20) %>%
   select (content.rendered)
+
+View (article2)
 gaz <- read_csv("data/chi_boundaries.csv") %>%
   select (COMMUNITY, AREA_NUM_1)
 

@@ -173,7 +173,7 @@ server <- function(input, output, session) {
       g_vals <- suppressWarnings(as.numeric(df[[input$demo_var]]))
       g_vals[is.na(g_vals)] <- median(g_vals, na.rm = TRUE)
       g_scaled <- safe_rescale(g_vals)
-      yellow_base <- "#FFD700"
+      yellow_base <- "#F7ED5C"
       yellow_intensity <- g_scaled * 0.8 + 0.1
       
       if (input$blue_var != "None") {

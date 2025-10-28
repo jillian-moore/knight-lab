@@ -7,10 +7,36 @@ library(conflicted)
 # conflicts ----
 conflicts_prefer(dplyr::filter)
 
-# read in data ----
+# read in all data ----
 api <- readRDS(here("data/api_scrape.rds"))
-census <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv"))
 
+census <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) |> 
+  janitor::clean_names()
+
+chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> 
+  janitor::clean_names()
+
+# census clean ----
+census_clean <- census |> 
+  mutate(
+    age_0_17 = male_0_to_17 + female_0_to_17,
+    age_18_24 = male_18_to_24 + female_18_to_24,
+    age_25_34 = male_25_to_34 + female_25_to_34,
+    age_35_49 = male_35_to_49 + female_35_to_49,
+    age_50_64 = male_50_to_64 + female_50_to_64,
+    age_65_plus = male_65 + female_65
+  ) |> 
+  rename("community" = "community_area")
+
+# shapefile clean ----
+if (!"the_geom" %in% names(chi_boundaries)) stop("❌ chi_boundaries.csv must include 'the_geom' column.")
+
+# convert WKT to sf geometry
+chi_boundaries <- chi_boundaries |> 
+  mutate(the_geom = st_as_sfc(the_geom)) |> 
+  st_as_sf(crs = 4326)
+
+# api clean ----
 api_clean <- api |>
   select(
     id, date, slug, status, link, author, 

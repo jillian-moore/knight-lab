@@ -217,29 +217,29 @@ if (file.exists("data/classification_checkpoint.rds")) {
   cat("\nCheckpoint file removed.\n")
 }
 
-
-# STEP 1: Check if Ollama is running and accessible
-cat("Testing Ollama connection...\n")
-test_ollama <- tryCatch({
-  request("http://127.0.0.1:11434/api/generate") |>
-    req_body_json(list(
-      model = "llama3:8b", 
-      prompt = "Say 'hello' in one word", 
-      stream = FALSE
-    )) |>
-    req_timeout(30) |>
-    req_perform() |>
-    resp_body_json()
-}, error = function(e) {
-  cat("ERROR:", e$message, "\n")
-  NULL
-})
-
-if (!is.null(test_ollama)) {
-  cat("✓ Ollama is working! Response:", test_ollama$response, "\n\n")
-} else {
-  cat("✗ Ollama is NOT responding. Make sure it's running:\n")
-  cat("  In terminal, run: ollama serve\n")
-  cat("  Or check if it's already running: ollama list\n\n")
-  stop("Cannot proceed without Ollama running")
-}
+# 
+# # STEP 1: Check if Ollama is running and accessible
+# cat("Testing Ollama connection...\n")
+# test_ollama <- tryCatch({
+#   request("http://127.0.0.1:11434/api/generate") |>
+#     req_body_json(list(
+#       model = "llama3:8b", 
+#       prompt = "Say 'hello' in one word", 
+#       stream = FALSE
+#     )) |>
+#     req_timeout(30) |>
+#     req_perform() |>
+#     resp_body_json()
+# }, error = function(e) {
+#   cat("ERROR:", e$message, "\n")
+#   NULL
+# })
+# 
+# if (!is.null(test_ollama)) {
+#   cat("✓ Ollama is working! Response:", test_ollama$response, "\n\n")
+# } else {
+#   cat("✗ Ollama is NOT responding. Make sure it's running:\n")
+#   cat("  In terminal, run: ollama serve\n")
+#   cat("  Or check if it's already running: ollama list\n\n")
+#   stop("Cannot proceed without Ollama running")
+# }

@@ -1,5 +1,4 @@
 # PRIMARY DATA VIZ ----
-
 # packages ----
 library(shiny)
 library(leaflet)
@@ -13,17 +12,13 @@ library(lubridate)
 library(here)
 library(tidyr)
 library(janitor)
+library(htmltools)
 
 # load data ----
-source("data_clean_by_jillian.R") # api_clean must be loaded here
+chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> clean_names()
+census_raw <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) |> clean_names()
 
-chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> 
-  clean_names()
-
-census_raw <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) |> 
-  clean_names()
-
-# clean data ----
+# clean census ----
 census <- census_raw |>
   mutate(
     age_0_17 = male_0_to_17 + female_0_to_17,
@@ -33,75 +28,59 @@ census <- census_raw |>
     age_50_64 = male_50_to_64 + female_50_to_64,
     age_65_plus = male_65 + female_65
   ) |>
-  rename(community = community_area)
+  rename(community = community_area) |>
+  mutate(community = tolower(trimws(community)))
 
 # prepare shape ----
 if (!"the_geom" %in% names(chi_boundaries)) stop("❌ chi_boundaries.csv must include 'the_geom' column.")
 
-# --- FIX: Safe geometry conversion ---
-# Safe WKT parsing
 chi_boundaries <- chi_boundaries %>%
-  # Convert WKT string to sfc (list of sfg)
-  mutate(the_geom_parsed = lapply(the_geom, function(wkt) {
-    tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
-  })) %>%
-  # Remove rows where parsing failed
+  mutate(
+    community = tolower(trimws(community)),
+    the_geom_parsed = lapply(the_geom, function(wkt) {
+      tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
+    })
+  ) %>%
   filter(!sapply(the_geom_parsed, is.null)) %>%
-  # Flatten list-column into sfc
   mutate(the_geom = st_sfc(do.call(c, the_geom_parsed), crs = 4326)) %>%
   select(-the_geom_parsed) %>%
   st_as_sf(sf_column_name = "the_geom")
 
-# combine census and shapefile ----
+# merge census and shapefile ----
 chi_boundaries <- chi_boundaries |> left_join(census, by = "community")
 
-# process API ----
-api_cols <- tolower(names(api_clean))
-community_col <- api_cols[grepl("community|neigh", api_cols)][1]
-if (is.null(community_col) || is.na(community_col)) stop("❌ API data must include a community or neighborhood column.")
-
-api_long <- api_clean |>
-  rename(community = all_of(community_col)) |>
-  filter(!is.na(community) & community != "")
-
-# detect topic column
-topic_col <- api_cols[grepl("topic", api_cols)][1]
-if (!is.null(topic_col) && !is.na(topic_col)) {
-  api_long <- api_long |> rename(topic = all_of(topic_col))
-} else {
-  api_long$topic <- NA
-}
-
-# topic categories ----
-topics <- c(
-  "Arts & Culture", "Business", "Crime & Public Safety", "Education",
-  "Food & Restaurants", "Health & Environment", "Housing", "Immigration",
-  "Politics", "Social Movements", "Sports & Recreation", "Transportation & Infrastructure"
+# canonical topics ----
+topic_cols <- c(
+  "arts_and_culture",
+  "business",
+  "crime_public_safety",
+  "education",
+  "food_restaurants",
+  "health_environment",
+  "housing",
+  "immigration",
+  "politics",
+  "social_movements",
+  "sports_recreation",
+  "transportation_infrastructure"
 )
 
-# summarize API by community ----
-api_summary <- api_long |>
-  group_by(community) |>
-  summarise(article_count = n(), .groups = "drop")
+# SIMULATE TOPIC DATA FOR TESTING ----
+set.seed(42) # reproducible results
+community_list <- unique(chi_boundaries$community)
+simulated_articles <- data.frame(
+  community = sample(community_list, 2000, replace = TRUE, 
+                     prob = seq(0.5, 2, length.out = length(community_list))),
+  topic_match = sample(topic_cols, 2000, replace = TRUE,
+                       prob = c(0.15, 0.08, 0.20, 0.10, 0.12, 0.08, 0.10, 0.03, 0.08, 0.03, 0.05, 0.08)),
+  article_date = sample(seq(as.Date("2020-01-01"), as.Date("2024-12-01"), by = "day"), 2000, replace = TRUE)
+)
 
-# merge all data ----
-full_data <- chi_boundaries |>
-  left_join(api_summary, by = "community") |>
-  mutate(article_count = replace_na(article_count, 0))
+# determine min/max dates safely
+date_min <- min(simulated_articles$article_date, na.rm = TRUE)
+date_max <- max(simulated_articles$article_date, na.rm = TRUE)
 
-# helper function for rescaling ----
-safe_rescale <- function(x, to = c(0, 1), from = range(x, na.rm = TRUE, finite = TRUE)) {
-  if (all(is.na(x)) || length(unique(x[!is.na(x)])) <= 1) {
-    return(rep(0.5, length(x)))
-  }
-  scales::rescale(x, to = to, from = from)
-}
-
-# extended green palette for overlays
-green_palette <- c("#e5f5e0", "#c7e9c0", "#a1d99b", "#74c476",
-                   "#41ab5d", "#238b45", "#006d2c", "#00441b")
-
-# demographic categories ----
+# demographics ----
 demo_choices <- c(
   "None" = "None",
   "White" = "white",
@@ -125,33 +104,91 @@ demo_choices <- c(
   "65+" = "age_65_plus"
 )
 
+use_real_data <- FALSE # for UI badge
+
 # UI ----
 ui <- fluidPage(
-  titlePanel("Chicago Neighborhood Map: Topics vs Demographics"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("blue_var", "Select Topic (Blue):",
-                  choices = c("None", topics), selected = "None"),
-      selectInput("demo_var", "Select Demographic (Yellow):",
-                  choices = demo_choices, selected = "None"),
-      sliderInput(
-        "month_slider", "Select Month:",
-        min = as.Date("2020-01-01"),
-        max = as.Date("2030-12-01"),
-        value = as.Date("2020-01-01"),
-        step = 31,
-        animate = animationOptions(interval = 2000, loop = TRUE)
-      ),
-      tags$div(style = "margin-top:20px;font-size:12px;",
-               tags$b("Legend:"), br(),
-               tags$span(style = "color:blue;", "■ Blue = Topic intensity"), br(),
-               tags$span(style = "color:gold;", "■ Yellow = Demographic intensity"), br(),
-               tags$span(style = "color:green;", "■ Green = Overlap intensity"))
+  tags$head(
+    tags$style(HTML("
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+      .title-panel { 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .title-panel h2 { margin: 0; font-weight: 300; }
+      .title-panel p { margin: 5px 0 0 0; opacity: 0.9; font-size: 14px; }
+      .control-section {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 15px;
+      }
+      .control-section h4 {
+        margin-top: 0;
+        color: #667eea;
+        font-size: 16px;
+        font-weight: 600;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 8px;
+      }
+      .mode-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 10px;
+      }
+      .sim-mode { background: #fff3cd; color: #856404; }
+      .real-mode { background: #d4edda; color: #155724; }
+    "))
+  ),
+  
+  div(class = "title-panel",
+      h2("Chicago Community Coverage Explorer",
+         span(class = "mode-badge sim-mode", "LIVE")),
+      p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
+  ),
+  
+  fluidRow(
+    column(4,
+           div(class = "control-section",
+               h4("📰 Topic Selection"),
+               selectInput("blue_var", NULL,
+                           choices = c("None", setNames(topic_cols, str_to_title(gsub("_", " ", topic_cols)))), 
+                           selected = "None")
+           ),
+           
+           div(class = "control-section",
+               h4("📊 Demographics"),
+               selectInput("demo_var", NULL,
+                           choices = demo_choices, 
+                           selected = "None")
+           ),
+           
+           div(class = "control-section",
+               h4("📅 Time Period"),
+               sliderInput("month_slider", NULL,
+                           min = date_min,
+                           max = date_max,
+                           value = date_max,
+                           step = 31,
+                           animate = animationOptions(interval = 2000, loop = TRUE))
+           )
+           # Legend removed
     ),
-    mainPanel(
-      leafletOutput("map", height = "800px"),
-      tags$div(style = "text-align:center; margin-top:10px; font-size:12px; color:#777;",
-               "Concept visualization — Block Club Chicago topics vs demographics")
+    
+    column(8,
+           leafletOutput("map", height = "750px"),
+           tags$div(style = "text-align: center; margin-top: 15px; font-size: 13px; color: #999;",
+                    paste0("Data: ", format(date_min, "%b %Y"), " - ", format(date_max, "%b %Y")),
+                    " | Census: 2020-2024"
+           )
     )
   )
 )
@@ -159,80 +196,126 @@ ui <- fluidPage(
 # SERVER ----
 server <- function(input, output, session) {
   
-  # detect date column automatically
-  date_col <- intersect(names(api_long),
-                        c("published_at", "pub_date", "date", "created_at", "timestamp"))[1]
-  
-  # reactive filtering based on month slider
-  filtered_data <- reactive({
-    df <- api_long
-    if (!is.null(date_col) && !is.na(date_col)) {
-      df[[date_col]] <- suppressWarnings(as.Date(df[[date_col]]))
-      df <- df |> filter(!is.na(.data[[date_col]]) & .data[[date_col]] <= input$month_slider)
+  filtered_topic_data <- reactive({
+    df <- simulated_articles
+    if (!is.null(input$month_slider)) {
+      df <- df |> filter(article_date <= input$month_slider)
     }
-    df <- df |>
+    
+    if (!is.null(input$blue_var) && input$blue_var != "None") {
+      df <- df |> filter(topic_match == input$blue_var)
+    }
+    
+    topic_summary <- df |>
       group_by(community) |>
-      summarise(article_count = n(), .groups = "drop") |>
-      right_join(chi_boundaries, by = "community") |>
-      mutate(article_count = replace_na(article_count, 0))
-    df
+      summarise(article_count = n(), .groups = "drop")
+    
+    topic_summary$article_count <- replace_na(topic_summary$article_count, 0)
+    topic_summary
   })
   
-  # base map
+  output$stats_info <- renderPrint({
+    topic_data <- filtered_topic_data()
+    total_articles <- if(nrow(topic_data) > 0) sum(topic_data$article_count) else 0
+    cat("📰 Filtered Articles\n")
+    cat("Total:", total_articles, "\n")
+    cat("Communities:", nrow(topic_data), "\n")
+    if (nrow(topic_data) > 0) {
+      cat("Range:", min(topic_data$article_count), "-", max(topic_data$article_count), "\n\n")
+      cat("Top 5:\n")
+      print(head(topic_data[order(-topic_data$article_count),], 5))
+    }
+  })
+  
   output$map <- renderLeaflet({
-    leaflet(full_data) |>
+    leaflet(chi_boundaries) |> 
       addProviderTiles(providers$CartoDB.Positron) |>
       setView(lng = -87.65, lat = 41.84, zoom = 10)
   })
   
-  # reactive polygon rendering
   observe({
-    df <- filtered_data()
+    map_data <- chi_boundaries
+    topic_data <- filtered_topic_data()
     
-    # Make sure df is an sf object
-    if (!inherits(df, "sf")) {
-      df <- st_as_sf(df, sf_column_name = "the_geom", crs = 4326)
+    if(nrow(topic_data) > 0) {
+      map_data <- map_data |> left_join(topic_data, by = "community")
     }
     
-    n <- nrow(df)
+    map_data$article_count <- replace_na(map_data$article_count, 0)
+    n <- nrow(map_data)
     
-    blue_norm <- if (input$blue_var != "None") safe_rescale(df$article_count) else rep(0, n)
-    yellow_norm <- if (input$demo_var != "None" && input$demo_var %in% names(df)) {
-      vals <- suppressWarnings(as.numeric(df[[input$demo_var]]))
-      vals[is.na(vals)] <- median(vals, na.rm = TRUE)
-      safe_rescale(vals)
-    } else rep(0, n)
+    # BLUE opacity
+    blue_opacity <- rep(0, n)
+    if (!is.null(input$blue_var) && input$blue_var != "None") {
+      max_articles <- max(map_data$article_count, na.rm = TRUE)
+      if (!is.infinite(max_articles) && max_articles > 0) {
+        blue_opacity <- map_data$article_count / max_articles
+      }
+    }
     
+    # YELLOW opacity
+    yellow_opacity <- rep(0, n)
+    if (!is.null(input$demo_var) && input$demo_var != "None" && input$demo_var %in% names(map_data)) {
+      demo_vals <- suppressWarnings(as.numeric(map_data[[input$demo_var]]))
+      demo_vals[is.na(demo_vals)] <- 0
+      max_demo <- max(demo_vals, na.rm = TRUE)
+      if (!is.infinite(max_demo) && max_demo > 0) {
+        yellow_opacity <- demo_vals / max_demo
+      }
+    }
+    
+    # Determine fill colors
     fill_colors <- rep("#D9D9D9", n)
-    fill_opacity <- rep(0.6, n)
+    fill_opacity <- rep(0.3, n)
     
-    if (input$blue_var != "None" && input$demo_var == "None") {
-      blue_palette <- colorRampPalette(brewer.pal(9, "Blues"))(100)
-      fill_colors <- blue_palette[ceiling(blue_norm * 99) + 1]
-      fill_opacity <- blue_norm * 0.9 + 0.1
-    } else if (input$blue_var == "None" && input$demo_var != "None") {
+    if (!is.null(input$blue_var) && input$blue_var != "None" && (is.null(input$demo_var) || input$demo_var == "None")) {
+      fill_colors <- rep("#0066CC", n)
+      fill_opacity <- pmax(blue_opacity * 0.85, 0.1)
+    } else if ((is.null(input$blue_var) || input$blue_var == "None") && !is.null(input$demo_var) && input$demo_var != "None") {
       fill_colors <- rep("#FFD700", n)
-      fill_opacity <- yellow_norm * 0.9 + 0.1
-    } else if (input$blue_var != "None" && input$demo_var != "None") {
-      intensity <- pmin(blue_norm + yellow_norm, 1)
-      fill_colors <- colorRampPalette(green_palette)(100)[ceiling(intensity * 99) + 1]
-      fill_opacity <- intensity * 0.9 + 0.1
+      fill_opacity <- pmax(yellow_opacity * 0.85, 0.1)
+    } else if (!is.null(input$blue_var) && input$blue_var != "None" && !is.null(input$demo_var) && input$demo_var != "None") {
+      fill_colors <- sapply(1:n, function(i) {
+        blue_val <- blue_opacity[i]
+        yellow_val <- yellow_opacity[i]
+        if(blue_val == 0 && yellow_val == 0) return("#D9D9D9")
+        total <- blue_val + yellow_val
+        blue_weight <- blue_val / total
+        yellow_weight <- yellow_val / total
+        if(blue_weight > yellow_weight){
+          green_base_rgb <- c(64, 176, 80)
+          blue_green_rgb <- c(32, 160, 192)
+          shift_strength <- (blue_weight - 0.5) * 2
+          blended_rgb <- green_base_rgb * (1 - shift_strength) + blue_green_rgb * shift_strength
+        } else {
+          green_base_rgb <- c(64, 176, 80)
+          yellow_green_rgb <- c(144, 192, 64)
+          shift_strength <- (yellow_weight - 0.5) * 2
+          blended_rgb <- green_base_rgb * (1 - shift_strength) + yellow_green_rgb * shift_strength
+        }
+        rgb(blended_rgb[1], blended_rgb[2], blended_rgb[3], maxColorValue = 255)
+      })
+      fill_opacity <- pmax(pmax(blue_opacity, yellow_opacity) * 0.85, 0.1)
     }
     
-    leafletProxy("map", data = df) |>
+    leafletProxy("map", data = map_data) |>
       clearShapes() |>
       addPolygons(
         fillColor = fill_colors,
-        color = "#555", weight = 1,
+        color = "#555",
+        weight = 1,
         fillOpacity = fill_opacity,
-        label = ~paste0("<b>", str_to_title(community), "</b><br>",
-                        "🟦 Topic count: ", article_count, "<br>🟨 Demographic: ",
-                        ifelse(input$demo_var == "None", "None",
-                               names(demo_choices)[demo_choices == input$demo_var])),
+        label = ~lapply(paste0(
+          "<b>", str_to_title(community), "</b><br>",
+          "📰 Articles (sim): ", article_count, "<br>",
+          "📊 Demographic: ",
+          ifelse(is.null(input$demo_var) || input$demo_var == "None", "None",
+                 ifelse(input$demo_var %in% names(map_data),
+                        format(replace_na(map_data[[input$demo_var]],0), big.mark = ","), "N/A"))
+        ), htmltools::HTML),
         labelOptions = labelOptions(direction = "auto", textsize = "12px", sticky = TRUE)
       )
   })
-  
 }
 
 # RUN APP ----

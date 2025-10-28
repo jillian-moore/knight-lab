@@ -12,7 +12,7 @@ library(here)
 load(here("data/full_data.rda"))
 
 # Source module
-source("R/map_module.R")
+source("data_viz_by_jillian.R", local = TRUE)
 
 # UI
 ui <- dashboardPage(

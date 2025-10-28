@@ -314,6 +314,17 @@ api_long <- api_clean |>
   filter(!is.na(community) & community != "") |> 
   select(-neighborhood_col)
 
+# keep individual article rows with dates
+api_detail <- api_long |> 
+  select(community, random_topic, date, year, month, year_month)
+
+# get date range for slider
+date_range <- api_long |> 
+  summarise(
+    min_date = min(date, na.rm = TRUE),
+    max_date = max(date, na.rm = TRUE)
+  )
+
 # aggregate api data by community, topic, and date
 api_summary <- api_long |> 
   group_by(community, random_topic, date) |> 

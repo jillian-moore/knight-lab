@@ -53,7 +53,7 @@ api_clean <- api |>
       str_trim()                    
   )
 
-# flattened neighborhood mapping ----
+# flattened neighborhood mapping
 neighborhood_mapping <- tribble(
   ~sub_community, ~chi_community,
   
@@ -278,3 +278,70 @@ api_clean <- api_clean |>
   ) |> 
   mutate(neighborhood1 = replace_na(neighborhood1, "chicago"))
 
+# add topics (at random) ----
+# selected topics
+topics <- c(
+  "Arts & Culture", "Business", "Crime & Public Safety", "Education",
+  "Food & Restaurants", "Health & Environment", "Housing", "Immigration",
+  "Politics", "Social Movements", "Sports & Recreation", "Transportation & Infrastructure"
+)
+
+api_clean <- api_clean |> 
+  mutate(
+    random_topic = sample(topics, size = n(), replace = TRUE)
+  )
+
+# merge files ----
+# shapefile and census merge
+chi_boundaries_clean <- chi_boundaries |> 
+  select(community, the_geom, area_num_1, shape_area, shape_len) |> 
+  left_join(census_clean, by = "community") |> 
+  mutate(community = str_to_lower(community))
+
+# pivot api longer and prepare date
+api_long <- api_clean |> 
+  mutate(
+    date = as.Date(date),
+    year = year(date),
+    month = month(date),
+    year_month = floor_date(date, "month")
+  ) |> 
+  pivot_longer(
+    cols = starts_with("neighborhood"),
+    names_to = "neighborhood_col",
+    values_to = "community"
+  ) |> 
+  filter(!is.na(community) & community != "") |> 
+  select(-neighborhood_col)
+
+# aggregate api data by community, topic, and date
+api_summary <- api_long |> 
+  group_by(community, random_topic, date) |> 
+  summarise(article_count = n(), .groups = "drop")
+
+# get total articles by community with date info
+api_community_totals <- api_long |> 
+  group_by(community) |> 
+  summarise(
+    total_articles = n(),
+    .groups = "drop"
+  )
+
+# merge with spatial data
+full_data <- chi_boundaries_clean |> 
+  left_join(api_community_totals, by = "community") |> 
+  left_join(api_summary, by = "community", relationship = "many-to-many")
+
+# clean up and handle NAs
+full_data <- full_data |> 
+  select(-starts_with("female"), -starts_with("male")) |> 
+  select(-ends_with(".y")) |> 
+  rename_with(~str_remove(., "\\.x$"), ends_with(".x")) |> 
+  mutate(
+    total_articles = replace_na(total_articles, 0),
+    article_count = replace_na(article_count, 0),
+    random_topic = replace_na(random_topic, "No Coverage")
+  )
+
+# save out ----
+save(full_data, file = here("data/full_data.rda"))

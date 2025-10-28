@@ -11,6 +11,5 @@ data/.DS_Store
 .Rproj.user/
 *.Rproj
 data/*.rds
-data/api_scrape.rds
-data/star.rds
+data/*.rda
 

@@ -4,3 +4,13 @@
 .Ruserdata
 
 # Ignore all RDS files in the data folder
+data/*.rds.DS_Store
+data/.DS_Store
+.Rhistory
+.RData*
+.Rproj.user/
+*.Rproj
+data/*.rds
+data/api_scrape.rds
+data/star.rds
+

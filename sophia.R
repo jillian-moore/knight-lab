@@ -8,6 +8,7 @@ library(stringr)
 library(htmltools)
 library(here)
 library(tidyr)
+library(ggplot2)
 
 # source data cleaning script ----
 source("data_clean_by_jillian.R")
@@ -17,206 +18,6 @@ chi_boundaries_sf <- chi_boundaries_clean %>%
   mutate(
     the_geom_parsed = lapply(the_geom, function(wkt) {
       tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
-    })
-    
-    # Comparison feature
-    observeEvent(input$compare_btn, {
-      req(input$compare_area1, input$compare_area2)
-      
-      if (input$compare_area1 == "" || input$compare_area2 == "") {
-        showNotification("Please select two communities to compare", type = "warning")
-        return()
-      }
-      
-      if (input$compare_area1 == input$compare_area2) {
-        showNotification("Please select two different communities", type = "warning")
-        return()
-      }
-      
-      session$sendCustomMessage("showComparison", list())
-    })
-    
-    output$comparison_content <- renderUI({
-      req(input$compare_area1, input$compare_area2)
-      
-      # Get data for both communities
-      census_data <- base_census_data()
-      article_data_filtered <- filtered_topic_data()
-      
-      get_community_data <- function(community_name) {
-        census_row <- census_data %>% filter(community == community_name)
-        article_row <- article_data_filtered %>% filter(community == community_name)
-        
-        article_count <- if(nrow(article_row) > 0) article_row$article_count else 0
-        
-        list(
-          name = str_to_title(community_name),
-          total_pop = format(census_row$total_population, big.mark = ","),
-          articles = article_count,
-          articles_per_1000 = if(census_row$total_population > 0) {
-            round((article_count / census_row$total_population) * 1000, 2)
-          } else 0,
-          white = format(census_row$white, big.mark = ","),
-          black = format(census_row$black_or_african_american, big.mark = ","),
-          asian = format(census_row$asian, big.mark = ","),
-          hispanic = format(census_row$hispanic_or_latino, big.mark = ","),
-          under_25k = format(census_row$under_25_000, big.mark = ","),
-          age_0_17 = format(census_row$age_0_17, big.mark = ","),
-          age_18_24 = format(census_row$age_18_24, big.mark = ","),
-          age_25_34 = format(census_row$age_25_34, big.mark = ",")
-        )
-      }
-      
-      comm1 <- get_community_data(input$compare_area1)
-      comm2 <- get_community_data(input$compare_area2)
-      
-      tagList(
-        div(class = "comparison-container",
-            # Community 1
-            div(class = "community-card",
-                h3(comm1$name),
-                div(class = "map-container",
-                    leafletOutput(outputId = "compare_map1", height = "200px")
-                ),
-                h4("📰 Article Coverage"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Total Articles:"),
-                    span(class = "stat-value", comm1$articles)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Articles per 1,000:"),
-                    span(class = "stat-value", comm1$articles_per_1000)
-                ),
-                h4("📊 Demographics"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Total Population:"),
-                    span(class = "stat-value", comm1$total_pop)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "White:"),
-                    span(class = "stat-value", comm1$white)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Black/African American:"),
-                    span(class = "stat-value", comm1$black)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Asian:"),
-                    span(class = "stat-value", comm1$asian)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Hispanic/Latino:"),
-                    span(class = "stat-value", comm1$hispanic)
-                ),
-                h4("💰 Income"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Under $25,000:"),
-                    span(class = "stat-value", comm1$under_25k)
-                ),
-                h4("👥 Age Groups"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "0-17:"),
-                    span(class = "stat-value", comm1$age_0_17)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "18-24:"),
-                    span(class = "stat-value", comm1$age_18_24)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "25-34:"),
-                    span(class = "stat-value", comm1$age_25_34)
-                )
-            ),
-            # Community 2
-            div(class = "community-card",
-                h3(comm2$name),
-                div(class = "map-container",
-                    leafletOutput(outputId = "compare_map2", height = "200px")
-                ),
-                h4("📰 Article Coverage"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Total Articles:"),
-                    span(class = "stat-value", comm2$articles)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Articles per 1,000:"),
-                    span(class = "stat-value", comm2$articles_per_1000)
-                ),
-                h4("📊 Demographics"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Total Population:"),
-                    span(class = "stat-value", comm2$total_pop)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "White:"),
-                    span(class = "stat-value", comm2$white)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Black/African American:"),
-                    span(class = "stat-value", comm2$black)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Asian:"),
-                    span(class = "stat-value", comm2$asian)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Hispanic/Latino:"),
-                    span(class = "stat-value", comm2$hispanic)
-                ),
-                h4("💰 Income"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "Under $25,000:"),
-                    span(class = "stat-value", comm2$under_25k)
-                ),
-                h4("👥 Age Groups"),
-                div(class = "stat-row",
-                    span(class = "stat-label", "0-17:"),
-                    span(class = "stat-value", comm2$age_0_17)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "18-24:"),
-                    span(class = "stat-value", comm2$age_18_24)
-                ),
-                div(class = "stat-row",
-                    span(class = "stat-label", "25-34:"),
-                    span(class = "stat-value", comm2$age_25_34)
-                )
-            )
-        )
-      )
-    })
-    
-    # Mini maps for comparison
-    output$compare_map1 <- renderLeaflet({
-      req(input$compare_area1)
-      
-      comm_shape <- chi_boundaries_sf %>% filter(community == input$compare_area1)
-      
-      leaflet(comm_shape) %>%
-        addProviderTiles(providers$CartoDB.Positron) %>%
-        addPolygons(fillColor = "#667eea", color = "#333", weight = 2, fillOpacity = 0.6) %>%
-        fitBounds(
-          lng1 = st_bbox(comm_shape)["xmin"],
-          lat1 = st_bbox(comm_shape)["ymin"],
-          lng2 = st_bbox(comm_shape)["xmax"],
-          lat2 = st_bbox(comm_shape)["ymax"]
-        )
-    })
-    
-    output$compare_map2 <- renderLeaflet({
-      req(input$compare_area2)
-      
-      comm_shape <- chi_boundaries_sf %>% filter(community == input$compare_area2)
-      
-      leaflet(comm_shape) %>%
-        addProviderTiles(providers$CartoDB.Positron) %>%
-        addPolygons(fillColor = "#764ba2", color = "#333", weight = 2, fillOpacity = 0.6) %>%
-        fitBounds(
-          lng1 = st_bbox(comm_shape)["xmin"],
-          lat1 = st_bbox(comm_shape)["ymin"],
-          lng2 = st_bbox(comm_shape)["xmax"],
-          lat2 = st_bbox(comm_shape)["ymax"]
-        )
     })
   ) %>%
   filter(!sapply(the_geom_parsed, is.null)) %>%
@@ -263,110 +64,178 @@ ui <- fluidPage(
   tags$head(
     tags$style(HTML("
       body { 
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: #f5f7fa;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background: #fafbfc;
+        color: #24292e;
       }
       .title-panel { 
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         color: white;
-        padding: 25px 30px;
-        border-radius: 10px;
-        margin-bottom: 25px;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        padding: 32px 40px;
+        border-radius: 12px;
+        margin-bottom: 28px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       }
       .title-panel h2 { 
         margin: 0; 
-        font-weight: 300;
-        font-size: 28px;
-        letter-spacing: -0.5px;
+        font-weight: 600;
+        font-size: 32px;
+        letter-spacing: -0.02em;
       }
       .title-panel p { 
-        margin: 8px 0 0 0; 
+        margin: 10px 0 0 0; 
         opacity: 0.95; 
-        font-size: 15px; 
+        font-size: 16px;
+        font-weight: 300;
       }
       .control-section {
         background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        margin-bottom: 18px;
-        border: 1px solid #e8ebf0;
+        padding: 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        margin-bottom: 20px;
+        border: 1px solid #e1e4e8;
       }
       .control-section h4 {
-        margin-top: 0;
-        color: #667eea;
-        font-size: 15px;
+        margin: 0 0 16px 0;
+        color: #4f46e5;
+        font-size: 14px;
         font-weight: 600;
-        border-bottom: 2px solid #f0f2f5;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
       }
       .mode-badge {
         display: inline-block;
-        padding: 5px 12px;
-        border-radius: 14px;
-        font-size: 11px;
-        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 16px;
+        font-size: 12px;
+        font-weight: 600;
         margin-left: 12px;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.02em;
+        background: rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
       }
-      .real-mode { 
-        background: #d4edda; 
-        color: #155724;
-        border: 1px solid #c3e6cb;
+      .btn-primary {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
       }
-      .shiny-input-radiogroup {
-        margin-top: 5px;
-      }
-      .radio label {
-        padding-left: 5px;
-        font-weight: 400;
-      }
-      .leaflet-popup-content {
-        font-size: 13px;
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
       }
       .modal-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         color: white;
+        border: none;
+        padding: 24px 32px;
+      }
+      .modal-body {
+        padding: 32px;
+      }
+      .modal-xl {
+        max-width: 1400px;
       }
       .comparison-container {
-        display: flex;
-        gap: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
       }
       .community-card {
-        flex: 1;
-        border: 2px solid #e8ebf0;
-        border-radius: 10px;
-        padding: 20px;
-        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 12px;
+        padding: 28px;
+        background: #fafbfc;
       }
       .community-card h3 {
-        color: #667eea;
-        margin-top: 0;
-        border-bottom: 2px solid #f0f2f5;
-        padding-bottom: 10px;
+        color: #24292e;
+        margin: 0 0 24px 0;
+        font-size: 24px;
+        font-weight: 600;
+        padding-bottom: 16px;
+        border-bottom: 2px solid #e1e4e8;
       }
-      .stat-row {
+      .shape-container {
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+      }
+      .shape-svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .stat-card {
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      .stat-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #24292e;
+      }
+      .chart-container {
+        background: white;
+        border: 1px solid #e1e4e8;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 16px;
+      }
+      .chart-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #24292e;
+        margin-bottom: 16px;
+      }
+      .leaflet-popup-content-wrapper {
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      }
+      .popup-header {
+        font-size: 18px;
+        font-weight: 600;
+        color: #4f46e5;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e1e4e8;
+      }
+      .popup-stat {
         display: flex;
         justify-content: space-between;
         padding: 8px 0;
-        border-bottom: 1px solid #f5f5f5;
+        border-bottom: 1px solid #f3f4f6;
       }
-      .stat-label {
-        font-weight: 600;
-        color: #666;
-      }
-      .stat-value {
-        color: #333;
+      .popup-label {
         font-weight: 500;
+        color: #6b7280;
       }
-      .map-container {
-        height: 200px;
-        margin: 15px 0;
-        border: 1px solid #ddd;
-        border-radius: 5px;
+      .popup-value {
+        font-weight: 600;
+        color: #24292e;
       }
     "))
   ),
@@ -387,7 +256,7 @@ ui <- fluidPage(
             type = "button",
             class = "close",
             `data-dismiss` = "modal",
-            style = "color: white; opacity: 1;",
+            style = "color: white; opacity: 1; font-size: 32px; font-weight: 300;",
             HTML("&times;")
           )
         ),
@@ -409,28 +278,28 @@ ui <- fluidPage(
   
   div(class = "title-panel",
       h2("Chicago Community Coverage Explorer",
-         span(class = "mode-badge real-mode", "LIVE DATA")),
-      p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
+         span(class = "mode-badge", "LIVE DATA")),
+      p("Analyzing Block Club Chicago article distribution and demographics across 77 neighborhoods")
   ),
   
   fluidRow(
     column(4,
            div(class = "control-section",
-               h4("📰 Topic Selection"),
+               h4("Topic Selection"),
                selectInput("blue_var", NULL,
                            choices = topic_choices, 
                            selected = "None")
            ),
            
            div(class = "control-section",
-               h4("📊 Demographics"),
+               h4("Demographics"),
                selectInput("demo_var", NULL,
                            choices = demo_choices, 
                            selected = "None")
            ),
            
            div(class = "control-section",
-               h4("📏 Metric Type"),
+               h4("Metric Type"),
                radioButtons("metric_type", NULL,
                             choices = c("Total Articles" = "total",
                                         "Articles per 1,000 People" = "per_capita"),
@@ -438,7 +307,7 @@ ui <- fluidPage(
            ),
            
            div(class = "control-section",
-               h4("📅 Time Period"),
+               h4("Time Period"),
                sliderInput("month_slider", NULL,
                            min = date_min,
                            max = date_max,
@@ -448,24 +317,24 @@ ui <- fluidPage(
            ),
            
            div(class = "control-section",
-               h4("⚖️ Compare Communities"),
+               h4("Compare Communities"),
                selectInput("compare_area1", "Community 1:",
-                           choices = c("Select..." = "", sort(unique(chi_boundaries_sf$community))),
+                           choices = c("Select..." = "", sort(str_to_title(unique(chi_boundaries_sf$community)))),
                            selected = ""),
                selectInput("compare_area2", "Community 2:",
-                           choices = c("Select..." = "", sort(unique(chi_boundaries_sf$community))),
+                           choices = c("Select..." = "", sort(str_to_title(unique(chi_boundaries_sf$community)))),
                            selected = ""),
                actionButton("compare_btn", "Compare", 
                             class = "btn-primary",
-                            style = "width: 100%; margin-top: 10px;")
+                            style = "width: 100%; margin-top: 12px;")
            )
     ),
     
     column(8,
            leafletOutput("map", height = "750px"),
-           tags$div(style = "text-align: center; margin-top: 15px; font-size: 13px; color: #6c757d;",
-                    paste0("📅 Data Range: ", format(date_min, "%b %Y"), " - ", format(date_max, "%b %Y")),
-                    " • 📊 Census: ACS 2020-2024"
+           tags$div(style = "text-align: center; margin-top: 20px; font-size: 13px; color: #6b7280; font-weight: 500;",
+                    paste0("Data Range: ", format(date_min, "%b %Y"), " - ", format(date_max, "%b %Y")),
+                    " | Census: ACS 2020-2024"
            )
     )
   )
@@ -491,22 +360,18 @@ server <- function(input, output, session) {
   filtered_topic_data <- reactive({
     df <- article_data
     
-    # Filter by date (all articles UP TO the selected date)
     if (!is.null(input$month_slider)) {
       df <- df %>% filter(article_date <= input$month_slider)
     }
     
-    # Filter by topic if selected
     if (!is.null(input$blue_var) && input$blue_var != "None") {
       df <- df %>% filter(topic_match == input$blue_var)
     }
     
-    # Count articles per community
     topic_summary <- df %>%
       group_by(community) %>%
       summarise(article_count = n(), .groups = "drop")
     
-    # Ensure all communities are represented (even with 0 articles)
     all_communities <- data.frame(
       community = unique(chi_boundaries_sf$community),
       stringsAsFactors = FALSE
@@ -526,34 +391,21 @@ server <- function(input, output, session) {
   })
   
   observe({
-    # Start with spatial data
     map_data <- chi_boundaries_sf
-    
-    # Get filtered article counts
     topic_data <- filtered_topic_data()
-    
-    # Get base census data
     census_data <- base_census_data()
     
-    # Join article counts
     map_data <- map_data %>%
-      left_join(topic_data, by = "community")
-    
-    # Join census data (to ensure we have clean demographic data)
-    map_data <- map_data %>%
-      select(-any_of(names(census_data)[-1])) %>%  # Remove duplicate demo columns
+      left_join(topic_data, by = "community") %>%
+      select(-any_of(names(census_data)[-1])) %>%
       left_join(census_data, by = "community")
     
     map_data$article_count <- replace_na(map_data$article_count, 0)
     
-    # Calculate display value (total or per capita)
     if (input$metric_type == "per_capita") {
       map_data <- map_data %>%
-        mutate(
-          display_value = if_else(total_population > 0, 
-                                  (article_count / total_population) * 1000, 
-                                  0)
-        )
+        mutate(display_value = if_else(total_population > 0, 
+                                       (article_count / total_population) * 1000, 0))
     } else {
       map_data <- map_data %>%
         mutate(display_value = article_count)
@@ -561,18 +413,15 @@ server <- function(input, output, session) {
     
     n <- nrow(map_data)
     
-    # BLUE intensity (based on article counts/metrics) - using sqrt scaling for better visual differentiation
     blue_intensity <- rep(0, n)
     if (!is.null(input$blue_var) && input$blue_var != "None") {
       max_val <- max(map_data$display_value, na.rm = TRUE)
       if (!is.infinite(max_val) && max_val > 0) {
-        # Square root scaling for better mid-range differentiation
         normalized_vals <- map_data$display_value / max_val
-        blue_intensity <- sqrt(normalized_vals)  # More gradual progression
+        blue_intensity <- sqrt(normalized_vals)
       }
     }
     
-    # YELLOW intensity (based on demographics) - using sqrt scaling
     yellow_intensity <- rep(0, n)
     if (!is.null(input$demo_var) && input$demo_var != "None" && input$demo_var %in% names(map_data)) {
       demo_vals <- suppressWarnings(as.numeric(map_data[[input$demo_var]]))
@@ -584,16 +433,13 @@ server <- function(input, output, session) {
       }
     }
     
-    # Determine fill colors with better color gradients
     fill_colors <- rep("#E8E8E8", n)
     
     if (!is.null(input$blue_var) && input$blue_var != "None" && 
         (is.null(input$demo_var) || input$demo_var == "None")) {
-      # Only topic selected - blue gradient from light to dark
       fill_colors <- sapply(1:n, function(i) {
         intensity <- blue_intensity[i]
         if (intensity == 0) return("#E8E8E8")
-        # Gradient from light blue (#B3D9FF) to dark blue (#0033A0)
         r <- round(179 + (0 - 179) * intensity)
         g <- round(217 + (51 - 217) * intensity)
         b <- round(255 + (160 - 255) * intensity)
@@ -601,11 +447,9 @@ server <- function(input, output, session) {
       })
     } else if ((is.null(input$blue_var) || input$blue_var == "None") && 
                !is.null(input$demo_var) && input$demo_var != "None") {
-      # Only demographic selected - yellow/orange gradient
       fill_colors <- sapply(1:n, function(i) {
         intensity <- yellow_intensity[i]
         if (intensity == 0) return("#E8E8E8")
-        # Gradient from light yellow (#FFF4CC) to dark orange (#CC6600)
         r <- round(255 + (204 - 255) * intensity)
         g <- round(244 + (102 - 244) * intensity)
         b <- round(204 + (0 - 204) * intensity)
@@ -613,34 +457,24 @@ server <- function(input, output, session) {
       })
     } else if (!is.null(input$blue_var) && input$blue_var != "None" && 
                !is.null(input$demo_var) && input$demo_var != "None") {
-      # Both selected - sophisticated green blend
       fill_colors <- sapply(1:n, function(i) {
         blue_val <- blue_intensity[i]
         yellow_val <- yellow_intensity[i]
         if(blue_val == 0 && yellow_val == 0) return("#E8E8E8")
         
-        # Calculate average intensity
         avg_intensity <- (blue_val + yellow_val) / 2
-        
-        # Determine color based on which is dominant
         total <- blue_val + yellow_val
         blue_weight <- blue_val / total
         
         if(blue_weight > 0.6) {
-          # More blue - blue-green gradient
-          # From light teal to dark blue-green
           r <- round(102 + (0 - 102) * avg_intensity)
           g <- round(204 + (128 - 204) * avg_intensity)
           b <- round(204 + (128 - 204) * avg_intensity)
         } else if(blue_weight < 0.4) {
-          # More yellow - yellow-green gradient
-          # From light lime to olive green
           r <- round(204 + (128 - 204) * avg_intensity)
           g <- round(255 + (160 - 255) * avg_intensity)
           b <- round(102 + (64 - 102) * avg_intensity)
         } else {
-          # Balanced - true green gradient
-          # From light green to forest green
           r <- round(144 + (34 - 144) * avg_intensity)
           g <- round(238 + (139 - 238) * avg_intensity)
           b <- round(144 + (34 - 144) * avg_intensity)
@@ -649,43 +483,51 @@ server <- function(input, output, session) {
       })
     }
     
-    # Create labels based on mode and selections
+    # Simple hover labels
     labels <- lapply(1:n, function(i) {
       row_data <- map_data[i, ]
+      label_text <- paste0("<b>", str_to_title(row_data$community), "</b><br>")
       
-      # Base label with community name
-      label_text <- paste0("<b style='font-size: 14px;'>", str_to_title(row_data$community), "</b><br>")
-      
-      # Add metric info
       if (input$metric_type == "per_capita") {
-        label_text <- paste0(
-          label_text,
-          "<span style='color: #667eea;'>📰 Articles per 1,000: </span>", 
-          "<b>", round(row_data$display_value, 2), "</b><br>"
-        )
-        # Don't show redundant demographic count in per capita mode
+        label_text <- paste0(label_text, "Articles per 1,000: ", round(row_data$display_value, 2))
       } else {
-        # Total articles mode
-        label_text <- paste0(
-          label_text,
-          "<span style='color: #667eea;'>📰 Total Articles: </span>", 
-          "<b>", row_data$article_count, "</b><br>"
-        )
-        
-        # Add demographic info if selected
-        if (!is.null(input$demo_var) && input$demo_var != "None" && 
-            input$demo_var %in% names(row_data)) {
+        label_text <- paste0(label_text, "Total Articles: ", row_data$article_count)
+        if (!is.null(input$demo_var) && input$demo_var != "None" && input$demo_var %in% names(row_data)) {
           demo_value <- row_data[[input$demo_var]]
           demo_name <- names(demo_choices)[demo_choices == input$demo_var]
-          label_text <- paste0(
-            label_text,
-            "<span style='color: #f39c12;'>📊 ", demo_name, ": </span>",
-            "<b>", format(replace_na(demo_value, 0), big.mark = ","), "</b>"
-          )
+          label_text <- paste0(label_text, "<br>", demo_name, ": ", format(replace_na(demo_value, 0), big.mark = ","))
         }
       }
-      
       HTML(label_text)
+    })
+    
+    # Create click popups with detailed stats
+    popups <- lapply(1:n, function(i) {
+      row_data <- map_data[i, ]
+      
+      popup_html <- paste0(
+        "<div class='popup-header'>", str_to_title(row_data$community), "</div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>Total Articles</span>",
+        "<span class='popup-value'>", row_data$article_count, "</span></div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>Articles per 1,000</span>",
+        "<span class='popup-value'>", round(row_data$display_value, 2), "</span></div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>Population</span>",
+        "<span class='popup-value'>", format(row_data$total_population, big.mark = ","), "</span></div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>White</span>",
+        "<span class='popup-value'>", format(row_data$white, big.mark = ","), "</span></div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>Black/African American</span>",
+        "<span class='popup-value'>", format(row_data$black_or_african_american, big.mark = ","), "</span></div>",
+        "<div class='popup-stat'>",
+        "<span class='popup-label'>Hispanic/Latino</span>",
+        "<span class='popup-value'>", format(row_data$hispanic_or_latino, big.mark = ","), "</span></div>"
+      )
+      
+      HTML(popup_html)
     })
     
     leafletProxy("map", data = map_data) |>
@@ -693,27 +535,227 @@ server <- function(input, output, session) {
       addPolygons(
         fillColor = fill_colors,
         color = "#666",
-        weight = 1.2,
+        weight = 1,
         opacity = 0.8,
         fillOpacity = 0.75,
         label = labels,
+        popup = popups,
         labelOptions = labelOptions(
           direction = "auto", 
           textsize = "13px", 
           sticky = TRUE,
-          style = list(
-            "padding" = "8px 12px",
-            "border-radius" = "6px",
-            "box-shadow" = "0 3px 10px rgba(0,0,0,0.2)"
-          )
+          style = list("padding" = "8px 12px", "border-radius" = "8px")
         ),
         highlightOptions = highlightOptions(
-          weight = 2.5,
+          weight = 2,
           color = "#000",
           opacity = 1,
           fillOpacity = 0.85,
           bringToFront = TRUE
         )
+      )
+  })
+  
+  # Comparison feature
+  observeEvent(input$compare_btn, {
+    req(input$compare_area1, input$compare_area2)
+    
+    if (input$compare_area1 == "" || input$compare_area2 == "") {
+      showNotification("Please select two communities to compare", type = "warning")
+      return()
+    }
+    
+    if (input$compare_area1 == input$compare_area2) {
+      showNotification("Please select two different communities", type = "warning")
+      return()
+    }
+    
+    session$sendCustomMessage("showComparison", list())
+  })
+  
+  output$comparison_content <- renderUI({
+    req(input$compare_area1, input$compare_area2)
+    
+    census_data <- base_census_data()
+    article_data_filtered <- filtered_topic_data()
+    
+    get_community_data <- function(community_name, color) {
+      community_lower <- tolower(community_name)
+      census_row <- census_data %>% filter(community == community_lower)
+      article_row <- article_data_filtered %>% filter(community == community_lower)
+      article_count <- if(nrow(article_row) > 0) article_row$article_count else 0
+      
+      # Get shape for SVG
+      shape <- chi_boundaries_sf %>% filter(community == community_lower)
+      coords <- st_coordinates(shape)[,1:2]
+      x_range <- range(coords[,1])
+      y_range <- range(coords[,2])
+      
+      # Normalize coordinates for SVG
+      width <- 200
+      height <- 200
+      normalized_coords <- data.frame(
+        x = (coords[,1] - x_range[1]) / (x_range[2] - x_range[1]) * width,
+        y = height - ((coords[,2] - y_range[1]) / (y_range[2] - y_range[1]) * height)
+      )
+      
+      polygon_points <- paste(apply(normalized_coords, 1, function(row) paste(row[1], row[2], sep=",")), collapse=" ")
+      
+      # Demographics data for chart
+      demo_data <- data.frame(
+        category = c("White", "Black", "Asian", "Hispanic", "Other"),
+        value = c(
+          census_row$white,
+          census_row$black_or_african_american,
+          census_row$asian,
+          census_row$hispanic_or_latino,
+          census_row$other_race + census_row$multiracial + census_row$native_hawaiian_or_pacific_islander + census_row$american_indian_or_alaska_native
+        )
+      )
+      demo_data$percentage <- round(demo_data$value / census_row$total_population * 100, 1)
+      
+      list(
+        name = community_name,
+        color = color,
+        svg_path = polygon_points,
+        articles = article_count,
+        articles_per_1000 = if(census_row$total_population > 0) {
+          round((article_count / census_row$total_population) * 1000, 2)
+        } else 0,
+        total_pop = format(census_row$total_population, big.mark = ","),
+        demo_data = demo_data
+      )
+    }
+    
+    comm1 <- get_community_data(input$compare_area1, "#4f46e5")
+    comm2 <- get_community_data(input$compare_area2, "#7c3aed")
+    
+    tagList(
+      div(class = "comparison-container",
+          # Community 1
+          div(class = "community-card",
+              h3(comm1$name),
+              div(class = "shape-container",
+                  HTML(paste0('<svg class="shape-svg" viewBox="0 0 200 200" width="200" height="200">
+                    <polygon points="', comm1$svg_path, '" fill="', comm1$color, '" stroke="#333" stroke-width="2" opacity="0.7"/>
+                  </svg>'))
+              ),
+              div(class = "stats-grid",
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Total Articles"),
+                      div(class = "stat-value", comm1$articles)
+                  ),
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Per 1,000 People"),
+                      div(class = "stat-value", comm1$articles_per_1000)
+                  ),
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Population"),
+                      div(class = "stat-value", comm1$total_pop)
+                  )
+              ),
+              div(class = "chart-container",
+                  div(class = "chart-title", "Demographics"),
+                  plotOutput("demo_chart1", height = "250px")
+              )
+          ),
+          # Community 2
+          div(class = "community-card",
+              h3(comm2$name),
+              div(class = "shape-container",
+                  HTML(paste0('<svg class="shape-svg" viewBox="0 0 200 200" width="200" height="200">
+                    <polygon points="', comm2$svg_path, '" fill="', comm2$color, '" stroke="#333" stroke-width="2" opacity="0.7"/>
+                  </svg>'))
+              ),
+              div(class = "stats-grid",
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Total Articles"),
+                      div(class = "stat-value", comm2$articles)
+                  ),
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Per 1,000 People"),
+                      div(class = "stat-value", comm2$articles_per_1000)
+                  ),
+                  div(class = "stat-card",
+                      div(class = "stat-label", "Population"),
+                      div(class = "stat-value", comm2$total_pop)
+                  )
+              ),
+              div(class = "chart-container",
+                  div(class = "chart-title", "Demographics"),
+                  plotOutput("demo_chart2", height = "250px")
+              )
+          )
+      )
+    )
+  })
+  
+  # Demographics charts
+  output$demo_chart1 <- renderPlot({
+    req(input$compare_area1)
+    
+    census_data <- base_census_data()
+    community_lower <- tolower(input$compare_area1)
+    census_row <- census_data %>% filter(community == community_lower)
+    
+    demo_data <- data.frame(
+      category = c("White", "Black", "Asian", "Hispanic", "Other"),
+      value = c(
+        census_row$white,
+        census_row$black_or_african_american,
+        census_row$asian,
+        census_row$hispanic_or_latino,
+        census_row$other_race + census_row$multiracial + census_row$native_hawaiian_or_pacific_islander + census_row$american_indian_or_alaska_native
+      )
+    )
+    demo_data$percentage <- round(demo_data$value / census_row$total_population * 100, 1)
+    demo_data <- demo_data %>% arrange(desc(percentage))
+    
+    ggplot(demo_data, aes(x = reorder(category, percentage), y = percentage)) +
+      geom_col(fill = "#4f46e5", alpha = 0.8) +
+      coord_flip() +
+      labs(x = NULL, y = "Percentage (%)") +
+      theme_minimal() +
+      theme(
+        axis.text = element_text(size = 11, color = "#24292e"),
+        axis.title = element_text(size = 12, face = "bold", color = "#6b7280"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(10, 10, 10, 10)
+      )
+  })
+  
+  output$demo_chart2 <- renderPlot({
+    req(input$compare_area2)
+    
+    census_data <- base_census_data()
+    community_lower <- tolower(input$compare_area2)
+    census_row <- census_data %>% filter(community == community_lower)
+    
+    demo_data <- data.frame(
+      category = c("White", "Black", "Asian", "Hispanic", "Other"),
+      value = c(
+        census_row$white,
+        census_row$black_or_african_american,
+        census_row$asian,
+        census_row$hispanic_or_latino,
+        census_row$other_race + census_row$multiracial + census_row$native_hawaiian_or_pacific_islander + census_row$american_indian_or_alaska_native
+      )
+    )
+    demo_data$percentage <- round(demo_data$value / census_row$total_population * 100, 1)
+    demo_data <- demo_data %>% arrange(desc(percentage))
+    
+    ggplot(demo_data, aes(x = reorder(category, percentage), y = percentage)) +
+      geom_col(fill = "#7c3aed", alpha = 0.8) +
+      coord_flip() +
+      labs(x = NULL, y = "Percentage (%)") +
+      theme_minimal() +
+      theme(
+        axis.text = element_text(size = 11, color = "#24292e"),
+        axis.title = element_text(size = 12, face = "bold", color = "#6b7280"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(10, 10, 10, 10)
       )
   })
 }

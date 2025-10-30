@@ -31,11 +31,6 @@ census_clean <- census |>
 # shapefile clean ----
 if (!"the_geom" %in% names(chi_boundaries)) stop("❌ chi_boundaries.csv must include 'the_geom' column.")
 
-# convert WKT to sf geometry
-chi_boundaries <- chi_boundaries |> 
-  mutate(the_geom = st_as_sfc(the_geom)) |> 
-  st_as_sf(crs = 4326)
-
 # api clean ----
 api_clean <- api |>
   select(
@@ -352,6 +347,84 @@ full_data <- full_data |>
     total_articles = replace_na(total_articles, 0),
     article_count = replace_na(article_count, 0),
     random_topic = replace_na(random_topic, "No Coverage")
+  )
+
+# add per person calculations
+full_data <- full_data |>
+  mutate(
+    # Overall articles per person
+    articles_per_person = if_else(total_population > 0, 
+                                  total_articles / total_population, 
+                                  0),
+    articles_per_1000 = if_else(total_population > 0, 
+                                (total_articles / total_population) * 1000, 
+                                0),
+    
+    # Articles per 1,000 by TOTAL POPULATION
+    topic_articles_per_0_17 = if_else(age_0_17 > 0, 
+                                      article_count / age_0_17, 
+                                      0),
+    topic_articles_per_18_24 = if_else(age_18_24 > 0, 
+                                       article_count / age_18_24, 
+                                       0),
+    topic_articles_per_25_34 = if_else(age_25_34 > 0, 
+                                       article_count / age_25_34, 
+                                       0),
+    topic_articles_per_35_49 = if_else(age_35_49 > 0, 
+                                       article_count / age_35_49, 
+                                       0),
+    topic_articles_per_50_64 = if_else(age_50_64 > 0, 
+                                       article_count / age_50_64, 
+                                       0),
+    topic_articles_per_65_plus = if_else(age_65_plus > 0, 
+                                         article_count / age_65_plus, 
+                                         0),
+    
+    # Articles per 1,000 by RACE/ETHNICITY
+    articles_per_white = if_else(white > 0, 
+                                 article_count / white * 1000, 
+                                 0),
+    articles_per_black = if_else(black_or_african_american > 0, 
+                                 article_count / black_or_african_american * 1000, 
+                                 0),
+    articles_per_asian = if_else(asian > 0, 
+                                 article_count / asian * 1000, 
+                                 0),
+    articles_per_native_american = if_else(american_indian_or_alaska_native > 0, 
+                                           article_count / american_indian_or_alaska_native * 1000, 
+                                           0),
+    articles_per_pacific_islander = if_else(native_hawaiian_or_pacific_islander > 0, 
+                                            article_count / native_hawaiian_or_pacific_islander * 1000, 
+                                            0),
+    articles_per_other_race = if_else(other_race > 0, 
+                                      article_count / other_race * 1000, 
+                                      0),
+    articles_per_multiracial = if_else(multiracial > 0, 
+                                       article_count / multiracial * 1000, 
+                                       0),
+    articles_per_hispanic = if_else(hispanic_or_latino > 0, 
+                                    article_count / hispanic_or_latino * 1000, 
+                                    0),
+    articles_per_white_non_hispanic = if_else(white_not_hispanic_or_latino > 0, 
+                                              article_count / white_not_hispanic_or_latino * 1000, 
+                                              0),
+    
+    # Articles per 1,000 by INCOME bracket
+    articles_per_under_25k = if_else(under_25_000 > 0, 
+                                     article_count / under_25_000 * 1000, 
+                                     0),
+    articles_per_25k_to_50k = if_else(x25_000_to_49_999 > 0, 
+                                      article_count / x25_000_to_49_999 * 1000, 
+                                      0),
+    articles_per_50k_to_75k = if_else(x50_000_to_74_999 > 0, 
+                                      article_count / x50_000_to_74_999 * 1000, 
+                                      0),
+    articles_per_75k_to_125k = if_else(x75_000_to_125_000 > 0, 
+                                       article_count / x75_000_to_125_000 * 1000, 
+                                       0),
+    articles_per_over_125k = if_else(x125_000 > 0, 
+                                     article_count / x125_000 * 1000, 
+                                     0)
   )
 
 # save out ----

@@ -14,40 +14,8 @@ library(tidyr)
 library(janitor)
 library(htmltools)
 
-# load data ----
-chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> clean_names()
-census_raw <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) |> clean_names()
-
-# clean census ----
-census <- census_raw |>
-  mutate(
-    age_0_17 = male_0_to_17 + female_0_to_17,
-    age_18_24 = male_18_to_24 + female_18_to_24,
-    age_25_34 = male_25_to_34 + female_25_to_34,
-    age_35_49 = male_35_to_49 + female_35_to_49,
-    age_50_64 = male_50_to_64 + female_50_to_64,
-    age_65_plus = male_65 + female_65
-  ) |>
-  rename(community = community_area) |>
-  mutate(community = tolower(trimws(community)))
-
-# prepare shape ----
-if (!"the_geom" %in% names(chi_boundaries)) stop("❌ chi_boundaries.csv must include 'the_geom' column.")
-
-chi_boundaries <- chi_boundaries %>%
-  mutate(
-    community = tolower(trimws(community)),
-    the_geom_parsed = lapply(the_geom, function(wkt) {
-      tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
-    })
-  ) %>%
-  filter(!sapply(the_geom_parsed, is.null)) %>%
-  mutate(the_geom = st_sfc(do.call(c, the_geom_parsed), crs = 4326)) %>%
-  select(-the_geom_parsed) %>%
-  st_as_sf(sf_column_name = "the_geom")
-
-# merge census and shapefile ----
-chi_boundaries <- chi_boundaries |> left_join(census, by = "community")
+# source data cleaning script ----
+source(here("data_clean_by_jillian.R"))
 
 # canonical topics ----
 topic_cols <- c(
@@ -65,20 +33,14 @@ topic_cols <- c(
   "transportation_infrastructure"
 )
 
-# SIMULATE TOPIC DATA FOR TESTING ----
-set.seed(42) # reproducible results
-community_list <- unique(chi_boundaries$community)
-simulated_articles <- data.frame(
-  community = sample(community_list, 2000, replace = TRUE, 
-                     prob = seq(0.5, 2, length.out = length(community_list))),
-  topic_match = sample(topic_cols, 2000, replace = TRUE,
-                       prob = c(0.15, 0.08, 0.20, 0.10, 0.12, 0.08, 0.10, 0.03, 0.08, 0.03, 0.05, 0.08)),
-  article_date = sample(seq(as.Date("2020-01-01"), as.Date("2024-12-01"), by = "day"), 2000, replace = TRUE)
-)
+# get article data with dates ----
+if (!exists("article_topic_data")) {
+  stop("❌ article_topic_data not found. Check data_clean_by_jillian.R creates this object.")
+}
 
 # determine min/max dates safely
-date_min <- min(simulated_articles$article_date, na.rm = TRUE)
-date_max <- max(simulated_articles$article_date, na.rm = TRUE)
+date_min <- min(article_topic_data$article_date, na.rm = TRUE)
+date_max <- max(article_topic_data$article_date, na.rm = TRUE)
 
 # demographics ----
 demo_choices <- c(
@@ -103,8 +65,6 @@ demo_choices <- c(
   "50 to 64" = "age_50_64",
   "65+" = "age_65_plus"
 )
-
-use_real_data <- FALSE # for UI badge
 
 # UI ----
 ui <- fluidPage(
@@ -144,14 +104,13 @@ ui <- fluidPage(
         font-weight: 600;
         margin-left: 10px;
       }
-      .sim-mode { background: #fff3cd; color: #856404; }
       .real-mode { background: #d4edda; color: #155724; }
     "))
   ),
   
   div(class = "title-panel",
       h2("Chicago Community Coverage Explorer",
-         span(class = "mode-badge sim-mode", "LIVE")),
+         span(class = "mode-badge real-mode", "LIVE")),
       p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
   ),
   
@@ -180,7 +139,6 @@ ui <- fluidPage(
                            step = 31,
                            animate = animationOptions(interval = 2000, loop = TRUE))
            )
-           # Legend removed
     ),
     
     column(8,
@@ -197,7 +155,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   filtered_topic_data <- reactive({
-    df <- simulated_articles
+    df <- article_topic_data
     if (!is.null(input$month_slider)) {
       df <- df |> filter(article_date <= input$month_slider)
     }
@@ -212,19 +170,6 @@ server <- function(input, output, session) {
     
     topic_summary$article_count <- replace_na(topic_summary$article_count, 0)
     topic_summary
-  })
-  
-  output$stats_info <- renderPrint({
-    topic_data <- filtered_topic_data()
-    total_articles <- if(nrow(topic_data) > 0) sum(topic_data$article_count) else 0
-    cat("📰 Filtered Articles\n")
-    cat("Total:", total_articles, "\n")
-    cat("Communities:", nrow(topic_data), "\n")
-    if (nrow(topic_data) > 0) {
-      cat("Range:", min(topic_data$article_count), "-", max(topic_data$article_count), "\n\n")
-      cat("Top 5:\n")
-      print(head(topic_data[order(-topic_data$article_count),], 5))
-    }
   })
   
   output$map <- renderLeaflet({
@@ -307,7 +252,7 @@ server <- function(input, output, session) {
         fillOpacity = fill_opacity,
         label = ~lapply(paste0(
           "<b>", str_to_title(community), "</b><br>",
-          "📰 Articles (sim): ", article_count, "<br>",
+          "📰 Articles: ", article_count, "<br>",
           "📊 Demographic: ",
           ifelse(is.null(input$demo_var) || input$demo_var == "None", "None",
                  ifelse(input$demo_var %in% names(map_data),

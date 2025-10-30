@@ -350,6 +350,7 @@ full_data <- full_data |>
   )
 
 # add per person calculations
+# add per person calculations
 full_data <- full_data |>
   mutate(
     # Overall articles per person
@@ -360,7 +361,7 @@ full_data <- full_data |>
                                 (total_articles / total_population) * 1000, 
                                 0),
     
-    # Articles per 1,000 by TOTAL POPULATION
+    # Articles by AGE demographic
     topic_articles_per_0_17 = if_else(age_0_17 > 0, 
                                       article_count / age_0_17, 
                                       0),
@@ -380,50 +381,50 @@ full_data <- full_data |>
                                          article_count / age_65_plus, 
                                          0),
     
-    # Articles per 1,000 by RACE/ETHNICITY
+    # Articles by RACE/ETHNICITY
     articles_per_white = if_else(white > 0, 
-                                 article_count / white * 1000, 
+                                 article_count / white, 
                                  0),
     articles_per_black = if_else(black_or_african_american > 0, 
-                                 article_count / black_or_african_american * 1000, 
+                                 article_count / black_or_african_american, 
                                  0),
     articles_per_asian = if_else(asian > 0, 
-                                 article_count / asian * 1000, 
+                                 article_count / asian, 
                                  0),
     articles_per_native_american = if_else(american_indian_or_alaska_native > 0, 
-                                           article_count / american_indian_or_alaska_native * 1000, 
+                                           article_count / american_indian_or_alaska_native, 
                                            0),
     articles_per_pacific_islander = if_else(native_hawaiian_or_pacific_islander > 0, 
-                                            article_count / native_hawaiian_or_pacific_islander * 1000, 
+                                            article_count / native_hawaiian_or_pacific_islander, 
                                             0),
     articles_per_other_race = if_else(other_race > 0, 
-                                      article_count / other_race * 1000, 
+                                      article_count / other_race, 
                                       0),
     articles_per_multiracial = if_else(multiracial > 0, 
-                                       article_count / multiracial * 1000, 
+                                       article_count / multiracial, 
                                        0),
     articles_per_hispanic = if_else(hispanic_or_latino > 0, 
-                                    article_count / hispanic_or_latino * 1000, 
+                                    article_count / hispanic_or_latino, 
                                     0),
     articles_per_white_non_hispanic = if_else(white_not_hispanic_or_latino > 0, 
-                                              article_count / white_not_hispanic_or_latino * 1000, 
+                                              article_count / white_not_hispanic_or_latino, 
                                               0),
     
-    # Articles per 1,000 by INCOME bracket
+    # Articles by INCOME bracket
     articles_per_under_25k = if_else(under_25_000 > 0, 
-                                     article_count / under_25_000 * 1000, 
+                                     article_count / under_25_000, 
                                      0),
     articles_per_25k_to_50k = if_else(x25_000_to_49_999 > 0, 
-                                      article_count / x25_000_to_49_999 * 1000, 
+                                      article_count / x25_000_to_49_999, 
                                       0),
     articles_per_50k_to_75k = if_else(x50_000_to_74_999 > 0, 
-                                      article_count / x50_000_to_74_999 * 1000, 
+                                      article_count / x50_000_to_74_999, 
                                       0),
     articles_per_75k_to_125k = if_else(x75_000_to_125_000 > 0, 
-                                       article_count / x75_000_to_125_000 * 1000, 
+                                       article_count / x75_000_to_125_000, 
                                        0),
     articles_per_over_125k = if_else(x125_000 > 0, 
-                                     article_count / x125_000 * 1000, 
+                                     article_count / x125_000, 
                                      0)
   )
 

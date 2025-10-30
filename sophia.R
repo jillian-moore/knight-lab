@@ -4,45 +4,36 @@ library(shiny)
 library(leaflet)
 library(sf)
 library(dplyr)
-library(readr)
 library(stringr)
-library(scales)
-library(RColorBrewer)
-library(lubridate)
-library(here)
-library(tidyr)
-library(janitor)
 library(htmltools)
+library(here)
 
 # source data cleaning script ----
-source(here("data_clean_by_jillian.R"))
+source("data_clean_by_jillian.R")
 
-# canonical topics ----
-topic_cols <- c(
-  "arts_and_culture",
-  "business",
-  "crime_public_safety",
-  "education",
-  "food_restaurants",
-  "health_environment",
-  "housing",
-  "immigration",
-  "politics",
-  "social_movements",
-  "sports_recreation",
-  "transportation_infrastructure"
-)
+# prepare spatial data from cleaning script ----
+chi_boundaries_sf <- chi_boundaries_clean %>%
+  mutate(
+    the_geom_parsed = lapply(the_geom, function(wkt) {
+      tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
+    })
+  ) %>%
+  filter(!sapply(the_geom_parsed, is.null)) %>%
+  mutate(the_geom = st_sfc(do.call(c, the_geom_parsed), crs = 4326)) %>%
+  select(-the_geom_parsed) %>%
+  st_as_sf(sf_column_name = "the_geom")
 
-# get article data with dates ----
-if (!exists("article_topic_data")) {
-  stop("❌ article_topic_data not found. Check data_clean_by_jillian.R creates this object.")
-}
+# use article data from cleaning script
+article_data <- api_detail %>%
+  rename(topic_match = random_topic, article_date = date)
 
-# determine min/max dates safely
-date_min <- min(article_topic_data$article_date, na.rm = TRUE)
-date_max <- max(article_topic_data$article_date, na.rm = TRUE)
+date_min <- date_range$min_date
+date_max <- date_range$max_date
 
-# demographics ----
+# topic choices (from cleaning script's topics vector)
+topic_choices <- c("None", topics)
+
+# demographics choices
 demo_choices <- c(
   "None" = "None",
   "White" = "white",
@@ -119,7 +110,7 @@ ui <- fluidPage(
            div(class = "control-section",
                h4("📰 Topic Selection"),
                selectInput("blue_var", NULL,
-                           choices = c("None", setNames(topic_cols, str_to_title(gsub("_", " ", topic_cols)))), 
+                           choices = topic_choices, 
                            selected = "None")
            ),
            
@@ -128,6 +119,14 @@ ui <- fluidPage(
                selectInput("demo_var", NULL,
                            choices = demo_choices, 
                            selected = "None")
+           ),
+           
+           div(class = "control-section",
+               h4("📏 Metric Type"),
+               radioButtons("metric_type", NULL,
+                            choices = c("Total Articles" = "total",
+                                        "Articles per 1,000 People" = "per_capita"),
+                            selected = "total")
            ),
            
            div(class = "control-section",
@@ -155,7 +154,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   filtered_topic_data <- reactive({
-    df <- article_topic_data
+    df <- article_data
     if (!is.null(input$month_slider)) {
       df <- df |> filter(article_date <= input$month_slider)
     }
@@ -173,13 +172,13 @@ server <- function(input, output, session) {
   })
   
   output$map <- renderLeaflet({
-    leaflet(chi_boundaries) |> 
+    leaflet(chi_boundaries_sf) |> 
       addProviderTiles(providers$CartoDB.Positron) |>
       setView(lng = -87.65, lat = 41.84, zoom = 10)
   })
   
   observe({
-    map_data <- chi_boundaries
+    map_data <- chi_boundaries_sf
     topic_data <- filtered_topic_data()
     
     if(nrow(topic_data) > 0) {
@@ -187,14 +186,28 @@ server <- function(input, output, session) {
     }
     
     map_data$article_count <- replace_na(map_data$article_count, 0)
+    
+    # Calculate per capita if needed
+    if (input$metric_type == "per_capita") {
+      map_data <- map_data |>
+        mutate(
+          display_value = if_else(total_population > 0, 
+                                  (article_count / total_population) * 1000, 
+                                  0)
+        )
+    } else {
+      map_data <- map_data |>
+        mutate(display_value = article_count)
+    }
+    
     n <- nrow(map_data)
     
     # BLUE opacity
     blue_opacity <- rep(0, n)
     if (!is.null(input$blue_var) && input$blue_var != "None") {
-      max_articles <- max(map_data$article_count, na.rm = TRUE)
-      if (!is.infinite(max_articles) && max_articles > 0) {
-        blue_opacity <- map_data$article_count / max_articles
+      max_val <- max(map_data$display_value, na.rm = TRUE)
+      if (!is.infinite(max_val) && max_val > 0) {
+        blue_opacity <- map_data$display_value / max_val
       }
     }
     
@@ -243,6 +256,13 @@ server <- function(input, output, session) {
       fill_opacity <- pmax(pmax(blue_opacity, yellow_opacity) * 0.85, 0.1)
     }
     
+    # Create labels
+    metric_label <- if(input$metric_type == "per_capita") {
+      "Articles per 1,000"
+    } else {
+      "Articles"
+    }
+    
     leafletProxy("map", data = map_data) |>
       clearShapes() |>
       addPolygons(
@@ -252,7 +272,7 @@ server <- function(input, output, session) {
         fillOpacity = fill_opacity,
         label = ~lapply(paste0(
           "<b>", str_to_title(community), "</b><br>",
-          "📰 Articles: ", article_count, "<br>",
+          "📰 ", metric_label, ": ", round(display_value, 2), "<br>",
           "📊 Demographic: ",
           ifelse(is.null(input$demo_var) || input$demo_var == "None", "None",
                  ifelse(input$demo_var %in% names(map_data),

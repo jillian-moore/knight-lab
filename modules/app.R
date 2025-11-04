@@ -1,7 +1,6 @@
-# app.R
-# Main Shiny Dashboard combining both modules
+# MAIN DASHBOARD
 
-# PACKAGES ----
+# load packages ----
 library(shiny)
 library(leaflet)
 library(sf)
@@ -14,13 +13,12 @@ library(ggplot2)
 library(scales)
 library(lubridate)
 
-# SOURCE DATA CLEANING SCRIPT ----
+# source data clean ----
 load(here("data/full_data.rda"))
 
-# SOURCE MODULES ----
+# source modules ----
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
-source(here("data_clean_by_jillian.R"))
 
 # PREPARE SPATIAL DATA (load once at startup for caching efficiency) ----
 chi_boundaries_sf <- chi_boundaries_clean %>%

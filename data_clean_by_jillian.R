@@ -313,6 +313,7 @@ api_long <- api_clean |>
 api_detail <- api_long |> 
   select(community, random_topic, date, year, month, year_month)
 
+# prep for shiny app ----
 # get date range for slider
 date_range <- api_long |> 
   summarise(
@@ -349,7 +350,6 @@ full_data <- full_data |>
     random_topic = replace_na(random_topic, "No Coverage")
   )
 
-# add per person calculations
 # add per person calculations
 full_data <- full_data |>
   mutate(
@@ -428,5 +428,62 @@ full_data <- full_data |>
                                      0)
   )
 
+# prepare spatial data for mapping
+chi_boundaries_sf <- chi_boundaries_clean |>
+  mutate(
+    the_geom_parsed = lapply(the_geom, function(wkt) {
+      tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
+    })
+  ) |>
+  filter(!sapply(the_geom_parsed, is.null)) |>
+  mutate(the_geom = st_sfc(do.call(c, the_geom_parsed), crs = 4326)) |>
+  select(-the_geom_parsed) |>
+  st_as_sf(sf_column_name = "the_geom")
+
+# prepare article data
+article_data <- api_detail |>
+  rename(topic_match = random_topic, article_date = date)
+
+# set date range
+date_range <- list(
+  min_date = date_range$min_date,
+  max_date = date_range$max_date
+)
+
+# topic choices
+topic_choices <- topics
+
+# demographic choices
+demo_choices <- c(
+  "None" = "None",
+  "White" = "white",
+  "Black or African American" = "black_or_african_american",
+  "American Indian or Alaska Native" = "american_indian_or_alaska_native",
+  "Asian" = "asian",
+  "Native Hawaiian or Pacific Islander" = "native_hawaiian_or_pacific_islander",
+  "Other Race" = "other_race",
+  "Multiracial" = "multiracial",
+  "Hispanic or Latino" = "hispanic_or_latino",
+  "Under $25,000" = "under_25_000",
+  "$25,000 to $49,999" = "x25_000_to_49_999",
+  "$50,000 to $74,999" = "x50_000_to_74_999",
+  "$75,000 to $125,000" = "x75_000_to_125_000",
+  "$125,000 +" = "x125_000",
+  "0 to 17" = "age_0_17",
+  "18 to 24" = "age_18_24",
+  "25 to 34" = "age_25_34",
+  "35 to 49" = "age_35_49",
+  "50 to 64" = "age_50_64",
+  "65+" = "age_65_plus"
+)
+
 # save out ----
-save(full_data, file = here("data/full_data.rda"))
+save(
+  full_data,
+  chi_boundaries_sf,
+  article_data,
+  date_range,
+  topic_choices,
+  demo_choices,
+  file = here("data/full_data.rda")
+)

@@ -1,436 +1,581 @@
-# DATA QUALITY CHECKS 
+# DATA QUALITY CHECK MODULE ----
 
-# load packages ----
-library(here)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
-library(stringr)
-library(lubridate)
-library(scales)
-library(purrr)
-
-# load data ----
-load(here("data/full_data.rda"))
-
-# create output directory
-dir.create(here("output/quality_checks"), recursive = TRUE, showWarnings = FALSE)
-
-# =============================================================================
-# 1. EVENT TAG CONFIRMATION ----
-# Average accuracy by each topic of the AI, in percent
-# =============================================================================
-
-cat("\n📊 TOPIC DISTRIBUTION ANALYSIS\n")
-cat("=", rep("=", 50), "\n", sep = "")
-
-# Count articles by topic
-topic_counts <- article_data %>%
-  count(topic_match, name = "article_count") %>%
-  arrange(desc(article_count)) %>%
-  mutate(
-    percentage = (article_count / sum(article_count)) * 100,
-    percentage_label = paste0(round(percentage, 1), "%")
+# UI ----
+dataQualityUI <- function(id) {
+  ns <- NS(id)
+  
+  tagList(
+    tags$head(
+      tags$style(HTML("
+        .quality-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 25px 30px;
+          border-radius: 10px;
+          margin-bottom: 25px;
+          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .quality-header h2 {
+          margin: 0;
+          font-weight: 300;
+          font-size: 28px;
+        }
+        .quality-header p {
+          margin: 8px 0 0 0;
+          opacity: 0.95;
+          font-size: 15px;
+        }
+        .metric-card {
+          background: white;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          border-left: 4px solid #667eea;
+          margin-bottom: 15px;
+          transition: transform 0.2s;
+        }
+        .metric-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .metric-value {
+          font-size: 32px;
+          font-weight: 700;
+          color: #667eea;
+          margin: 5px 0;
+        }
+        .metric-label {
+          font-size: 13px;
+          color: #6c757d;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .section-card {
+          background: white;
+          border-radius: 10px;
+          padding: 25px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          margin-bottom: 20px;
+        }
+        .section-card h3 {
+          color: #667eea;
+          font-size: 20px;
+          font-weight: 600;
+          margin-top: 0;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #f0f2f5;
+          padding-bottom: 10px;
+        }
+        .plot-container {
+          background: #fafbfc;
+          border-radius: 8px;
+          padding: 15px;
+          margin-top: 15px;
+        }
+      "))
+    ),
+    
+    div(class = "quality-header",
+        h2("📊 Data Quality Dashboard"),
+        p("Comprehensive validation and analysis of Chicago community data")
+    ),
+    
+    # Summary Metrics Row
+    fluidRow(
+      column(3,
+             div(class = "metric-card",
+                 div(class = "metric-label", "Total Articles"),
+                 div(class = "metric-value", textOutput(ns("total_articles")))
+             )
+      ),
+      column(3,
+             div(class = "metric-card",
+                 div(class = "metric-label", "Communities Covered"),
+                 div(class = "metric-value", textOutput(ns("total_communities")))
+             )
+      ),
+      column(3,
+             div(class = "metric-card",
+                 div(class = "metric-label", "Total Population"),
+                 div(class = "metric-value", textOutput(ns("total_population")))
+             )
+      ),
+      column(3,
+             div(class = "metric-card",
+                 div(class = "metric-label", "Topics Tracked"),
+                 div(class = "metric-value", textOutput(ns("topics_tracked")))
+             )
+      )
+    ),
+    
+    # Tab Panel for Different Sections
+    tabsetPanel(
+      type = "pills",
+      
+      # Topic Distribution Tab
+      tabPanel(
+        "📰 Topic Distribution",
+        icon = icon("tags"),
+        br(),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Article Distribution by Topic"),
+                     div(class = "plot-container",
+                         plotOutput(ns("topic_plot"), height = "500px")
+                     ),
+                     br(),
+                     dataTableOutput(ns("topic_table"))
+                 )
+          )
+        )
+      ),
+      
+      # Census Demographics Tab
+      tabPanel(
+        "👥 Demographics",
+        icon = icon("users"),
+        br(),
+        fluidRow(
+          column(6,
+                 div(class = "section-card",
+                     h3("Race/Ethnicity Distribution"),
+                     div(class = "plot-container",
+                         plotOutput(ns("race_plot"), height = "400px")
+                     )
+                 )
+          ),
+          column(6,
+                 div(class = "section-card",
+                     h3("Age Distribution"),
+                     div(class = "plot-container",
+                         plotOutput(ns("age_plot"), height = "400px")
+                     )
+                 )
+          )
+        ),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Income Distribution"),
+                     div(class = "plot-container",
+                         plotOutput(ns("income_plot"), height = "400px")
+                     )
+                 )
+          )
+        )
+      ),
+      
+      # Publication Trends Tab
+      tabPanel(
+        "📈 Publication Trends",
+        icon = icon("chart-line"),
+        br(),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Article Publication Timeline"),
+                     div(class = "plot-container",
+                         plotOutput(ns("timeline_plot"), height = "400px")
+                     )
+                 )
+          )
+        ),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Articles by Year"),
+                     div(class = "plot-container",
+                         plotOutput(ns("year_plot"), height = "400px")
+                     ),
+                     br(),
+                     dataTableOutput(ns("year_table"))
+                 )
+          )
+        )
+      ),
+      
+      # Neighborhood Coverage Tab
+      tabPanel(
+        "🗺️ Neighborhood Coverage",
+        icon = icon("map-marked-alt"),
+        br(),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Top 20 Neighborhoods by Article Coverage"),
+                     div(class = "plot-container",
+                         plotOutput(ns("neighborhood_plot"), height = "500px")
+                     )
+                 )
+          )
+        ),
+        fluidRow(
+          column(6,
+                 div(class = "section-card",
+                     h3("Top Covered Neighborhoods"),
+                     dataTableOutput(ns("top_neighborhoods_table"))
+                 )
+          ),
+          column(6,
+                 div(class = "section-card",
+                     h3("Low Coverage Neighborhoods"),
+                     p("Communities with fewer than 10 articles:", style = "color: #6c757d; font-size: 14px;"),
+                     dataTableOutput(ns("low_coverage_table"))
+                 )
+          )
+        )
+      ),
+      
+      # Methodology Tab
+      tabPanel(
+        "📋 Methodology",
+        icon = icon("book"),
+        br(),
+        fluidRow(
+          column(12,
+                 div(class = "section-card",
+                     h3("Neighborhood Mapping Methodology"),
+                     div(style = "background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.8;",
+                         verbatimTextOutput(ns("methodology_text"))
+                     )
+                 )
+          )
+        )
+      )
+    )
   )
+}
 
-print(topic_counts)
-
-# Plot topic distribution
-p1 <- ggplot(topic_counts, aes(x = reorder(topic_match, article_count), y = article_count)) +
-  geom_col(fill = "#667eea", alpha = 0.8) +
-  geom_text(aes(label = paste0(article_count, "\n(", percentage_label, ")")), 
-            hjust = -0.1, size = 3.5) +
-  coord_flip() +
-  labs(
-    title = "Article Distribution by Topic",
-    subtitle = paste0("Total Articles: ", format(sum(topic_counts$article_count), big.mark = ",")),
-    x = NULL,
-    y = "Number of Articles"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 11)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/01_topic_distribution.png"), p1, 
-       width = 10, height = 8, dpi = 300)
-
-cat("\n✅ Topic distribution plot saved to output/quality_checks/01_topic_distribution.png\n")
-
-# =============================================================================
-# 2. CENSUS DATA CHECK ----
-# Total people by community and each demographic
-# =============================================================================
-
-cat("\n\n👥 CENSUS DEMOGRAPHICS ANALYSIS\n")
-cat("=" , rep("=", 50), "\n", sep = "")
-
-# Get total population by community
-census_summary <- chi_boundaries_sf %>%
-  st_drop_geometry() %>%
-  select(community, total_population, 
-         white, black_or_african_american, asian, hispanic_or_latino,
-         age_0_17, age_18_24, age_25_34, age_35_49, age_50_64, age_65_plus,
-         under_25_000, x25_000_to_49_999, x50_000_to_74_999, 
-         x75_000_to_125_000, x125_000) %>%
-  arrange(desc(total_population))
-
-# Summary statistics
-cat("\nPopulation Summary:\n")
-cat("Total Population:", format(sum(census_summary$total_population, na.rm = TRUE), big.mark = ","), "\n")
-cat("Communities:", nrow(census_summary), "\n")
-cat("Avg Population per Community:", 
-    format(round(mean(census_summary$total_population, na.rm = TRUE)), big.mark = ","), "\n")
-cat("Median Population:", 
-    format(round(median(census_summary$total_population, na.rm = TRUE)), big.mark = ","), "\n")
-
-# Top 10 communities by population
-cat("\nTop 10 Communities by Population:\n")
-print(census_summary %>% 
-        select(community, total_population) %>% 
-        head(10))
-
-# Race/Ethnicity breakdown
-race_totals <- census_summary %>%
-  summarise(
-    White = sum(white, na.rm = TRUE),
-    Black = sum(black_or_african_american, na.rm = TRUE),
-    Asian = sum(asian, na.rm = TRUE),
-    Hispanic = sum(hispanic_or_latino, na.rm = TRUE)
-  ) %>%
-  pivot_longer(everything(), names_to = "race_ethnicity", values_to = "population") %>%
-  mutate(
-    percentage = (population / sum(population)) * 100,
-    percentage_label = paste0(round(percentage, 1), "%")
-  )
-
-cat("\nRace/Ethnicity Distribution:\n")
-print(race_totals)
-
-# Plot race/ethnicity
-p2 <- ggplot(race_totals, aes(x = reorder(race_ethnicity, population), y = population)) +
-  geom_col(aes(fill = race_ethnicity), show.legend = FALSE) +
-  geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
-            hjust = -0.1, size = 4) +
-  coord_flip() +
-  scale_fill_manual(values = c("#e74c3c", "#3498db", "#2ecc71", "#f39c12")) +
-  labs(
-    title = "Chicago Population by Race/Ethnicity",
-    subtitle = "Based on ACS 2020-2024 Census Data",
-    x = NULL,
-    y = "Population"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 11)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/02_race_ethnicity.png"), p2, 
-       width = 10, height = 6, dpi = 300)
-
-# Age distribution
-age_totals <- census_summary %>%
-  summarise(
-    `0-17` = sum(age_0_17, na.rm = TRUE),
-    `18-24` = sum(age_18_24, na.rm = TRUE),
-    `25-34` = sum(age_25_34, na.rm = TRUE),
-    `35-49` = sum(age_35_49, na.rm = TRUE),
-    `50-64` = sum(age_50_64, na.rm = TRUE),
-    `65+` = sum(age_65_plus, na.rm = TRUE)
-  ) %>%
-  pivot_longer(everything(), names_to = "age_group", values_to = "population") %>%
-  mutate(
-    percentage = (population / sum(population)) * 100,
-    percentage_label = paste0(round(percentage, 1), "%")
-  )
-
-cat("\nAge Distribution:\n")
-print(age_totals)
-
-# Plot age distribution
-p3 <- ggplot(age_totals, aes(x = age_group, y = population)) +
-  geom_col(fill = "#9b59b6", alpha = 0.8) +
-  geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
-            vjust = -0.5, size = 3.5) +
-  labs(
-    title = "Chicago Population by Age Group",
-    subtitle = "Based on ACS 2020-2024 Census Data",
-    x = "Age Group",
-    y = "Population"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 11)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/03_age_distribution.png"), p3, 
-       width = 10, height = 6, dpi = 300)
-
-# Income distribution
-income_totals <- census_summary %>%
-  summarise(
-    `Under $25k` = sum(under_25_000, na.rm = TRUE),
-    `$25k-$50k` = sum(x25_000_to_49_999, na.rm = TRUE),
-    `$50k-$75k` = sum(x50_000_to_74_999, na.rm = TRUE),
-    `$75k-$125k` = sum(x75_000_to_125_000, na.rm = TRUE),
-    `$125k+` = sum(x125_000, na.rm = TRUE)
-  ) %>%
-  pivot_longer(everything(), names_to = "income_bracket", values_to = "households") %>%
-  mutate(
-    percentage = (households / sum(households)) * 100,
-    percentage_label = paste0(round(percentage, 1), "%"),
-    income_bracket = factor(income_bracket, 
-                            levels = c("Under $25k", "$25k-$50k", "$50k-$75k", 
-                                       "$75k-$125k", "$125k+"))
-  )
-
-cat("\nIncome Distribution:\n")
-print(income_totals)
-
-# Plot income distribution
-p4 <- ggplot(income_totals, aes(x = income_bracket, y = households)) +
-  geom_col(fill = "#16a085", alpha = 0.8) +
-  geom_text(aes(label = paste0(comma(households), "\n(", percentage_label, ")")), 
-            vjust = -0.5, size = 3.5) +
-  labs(
-    title = "Chicago Households by Income Bracket",
-    subtitle = "Based on ACS 2020-2024 Census Data",
-    x = "Income Bracket",
-    y = "Number of Households"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text.x = element_text(size = 10, angle = 15, hjust = 1)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/04_income_distribution.png"), p4, 
-       width = 10, height = 6, dpi = 300)
-
-cat("\n✅ Census plots saved to output/quality_checks/\n")
-
-# =============================================================================
-# 3. API DATA CHECK ----
-# Total articles per year
-# =============================================================================
-
-cat("\n\n📰 ARTICLE PUBLICATION TRENDS\n")
-cat("=", rep("=", 50), "\n", sep = "")
-
-# Articles by year
-articles_by_year <- article_data %>%
-  mutate(year = year(article_date)) %>%
-  count(year, name = "article_count") %>%
-  arrange(year)
-
-cat("\nArticles by Year:\n")
-print(articles_by_year)
-
-# Articles by month
-articles_by_month <- article_data %>%
-  mutate(
-    year_month = floor_date(article_date, "month"),
-    year = year(article_date),
-    month = month(article_date, label = TRUE)
-  ) %>%
-  count(year_month, year, month, name = "article_count") %>%
-  arrange(year_month)
-
-# Plot articles over time
-p5 <- ggplot(articles_by_month, aes(x = year_month, y = article_count)) +
-  geom_line(color = "#667eea", size = 1) +
-  geom_point(color = "#667eea", size = 2) +
-  labs(
-    title = "Article Publication Trend Over Time",
-    subtitle = paste0("Total Articles: ", format(nrow(article_data), big.mark = ",")),
-    x = "Date",
-    y = "Articles Published"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 11)
-  ) +
-  scale_y_continuous(labels = comma) +
-  scale_x_date(date_breaks = "6 months", date_labels = "%b %Y")
-
-ggsave(here("output/quality_checks/05_publication_trend.png"), p5, 
-       width = 12, height = 6, dpi = 300)
-
-# Plot articles by year (bar chart)
-p6 <- ggplot(articles_by_year, aes(x = factor(year), y = article_count)) +
-  geom_col(fill = "#e67e22", alpha = 0.8) +
-  geom_text(aes(label = comma(article_count)), vjust = -0.5, size = 4) +
-  labs(
-    title = "Articles Published by Year",
-    subtitle = "Annual publication volume",
-    x = "Year",
-    y = "Number of Articles"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 11)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/06_articles_by_year.png"), p6, 
-       width = 10, height = 6, dpi = 300)
-
-cat("\n✅ Publication trend plots saved to output/quality_checks/\n")
-
-# =============================================================================
-# 4. NEIGHBORHOOD MAPPING CHECK ----
-# Make pretty list of mapping and explain methodology
-# =============================================================================
-
-cat("\n\n🗺️  NEIGHBORHOOD MAPPING METHODOLOGY\n")
-cat("=", rep("=", 50), "\n", sep = "")
-
-# Create neighborhood mapping summary
-mapping_summary <- article_data %>%
-  group_by(community) %>%
-  summarise(
-    article_count = n(),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(article_count))
-
-cat("\nNeighborhood Coverage Summary:\n")
-cat("Total Neighborhoods:", nrow(mapping_summary), "\n")
-cat("Total Articles Mapped:", sum(mapping_summary$article_count), "\n")
-cat("Avg Articles per Neighborhood:", 
-    round(mean(mapping_summary$article_count)), "\n")
-
-# Top neighborhoods by coverage
-cat("\nTop 15 Neighborhoods by Article Coverage:\n")
-print(mapping_summary %>% head(15))
-
-# Neighborhoods with low coverage
-cat("\nNeighborhoods with <10 Articles:\n")
-low_coverage <- mapping_summary %>% filter(article_count < 10)
-print(low_coverage)
-
-# Plot neighborhood coverage
-p7 <- mapping_summary %>%
-  top_n(20, article_count) %>%
-  ggplot(aes(x = reorder(community, article_count), y = article_count)) +
-  geom_col(fill = "#27ae60", alpha = 0.8) +
-  geom_text(aes(label = comma(article_count)), hjust = -0.1, size = 3) +
-  coord_flip() +
-  labs(
-    title = "Top 20 Neighborhoods by Article Coverage",
-    subtitle = "Most frequently covered communities",
-    x = NULL,
-    y = "Number of Articles"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(face = "bold", size = 16),
-    plot.subtitle = element_text(size = 12, color = "gray40"),
-    axis.text = element_text(size = 10)
-  ) +
-  scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-
-ggsave(here("output/quality_checks/07_neighborhood_coverage.png"), p7, 
-       width = 10, height = 8, dpi = 300)
-
-cat("\n✅ Neighborhood mapping plot saved to output/quality_checks/\n")
-
-# Create methodology explanation
-methodology_text <- "
-NEIGHBORHOOD MAPPING METHODOLOGY
-=================================
-
-This analysis maps Block Club Chicago articles to Chicago's 77 official 
-community areas using a hierarchical matching system:
-
-1. PRIMARY MATCHING (Sub-community field):
-   - Extract the lead text before em-dash/hyphen in article content
-   - Match against neighborhood mapping table
-   - If match found, use ONLY this neighborhood
-
-2. SECONDARY MATCHING (Article Sections):
-   - If no primary match, parse parsely.meta.articleSection field
-   - Check each section against mapping table
-   - Collect ALL matching neighborhoods
-
-3. TERTIARY MATCHING (Primary Category):
-   - If still no match, parse slp_primary_category.name field
-   - Check each category against mapping table
-   - Collect ALL matching neighborhoods
-
-4. DEFAULT ASSIGNMENT:
-   - If no matches found, assign to 'chicago' (citywide)
-
-NEIGHBORHOOD MAPPING TABLE:
-- Maps sub-neighborhoods to official community areas
-- Examples:
-  * 'Wicker Park' → 'West Town'
-  * 'Bronzeville' → 'Grand Boulevard', 'Kenwood', 'Washington Park'
-  * 'Chinatown' → 'Armour Square'
-
-MULTI-NEIGHBORHOOD ARTICLES:
-- Articles can be assigned to multiple neighborhoods (up to 3)
-- This captures stories that span multiple communities
-- Each neighborhood assignment is stored in separate columns:
-  neighborhood1, neighborhood2, neighborhood3
-
-DATA QUALITY NOTES:
-- Total mapped neighborhoods: {n_neighborhoods}
-- Articles successfully mapped: {pct_mapped}%
-- Articles requiring manual review: {articles_no_match}
-"
-
-methodology_text <- str_glue(methodology_text,
-                             n_neighborhoods = nrow(mapping_summary),
-                             pct_mapped = round((sum(mapping_summary$article_count) / nrow(article_data)) * 100, 1),
-                             articles_no_match = sum(mapping_summary$community == "chicago")
-)
-
-# Save methodology
-writeLines(methodology_text, here("output/quality_checks/00_methodology.txt"))
-
-cat("\n✅ Methodology saved to output/quality_checks/00_methodology.txt\n")
-
-# =============================================================================
-# SUMMARY REPORT ----
-# =============================================================================
-
-cat("\n\n📋 DATA QUALITY SUMMARY REPORT\n")
-cat("=", rep("=", 50), "\n", sep = "")
-
-summary_report <- list(
-  total_articles = nrow(article_data),
-  date_range = paste(min(article_data$article_date), "to", max(article_data$article_date)),
-  total_communities = nrow(mapping_summary),
-  total_population = sum(census_summary$total_population, na.rm = TRUE),
-  topics_tracked = length(unique(article_data$topic_match)),
-  avg_articles_per_community = round(mean(mapping_summary$article_count)),
-  communities_with_low_coverage = nrow(low_coverage)
-)
-
-cat("\n")
-cat("Total Articles:", format(summary_report$total_articles, big.mark = ","), "\n")
-cat("Date Range:", summary_report$date_range, "\n")
-cat("Communities Covered:", summary_report$total_communities, "\n")
-cat("Total Population:", format(summary_report$total_population, big.mark = ","), "\n")
-cat("Topics Tracked:", summary_report$topics_tracked, "\n")
-cat("Avg Articles/Community:", summary_report$avg_articles_per_community, "\n")
-cat("Low Coverage Communities (<10 articles):", summary_report$communities_with_low_coverage, "\n")
-
-cat("\n\n✅ ALL QUALITY CHECKS COMPLETE!\n")
-cat("📁 Output saved to: output/quality_checks/\n\n")
+# SERVER ----
+dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
+  moduleServer(id, function(input, output, session) {
+    
+    # Prepare census summary data
+    census_summary <- reactive({
+      chi_boundaries_sf %>%
+        st_drop_geometry() %>%
+        select(community, total_population, 
+               white, black_or_african_american, asian, hispanic_or_latino,
+               age_0_17, age_18_24, age_25_34, age_35_49, age_50_64, age_65_plus,
+               under_25_000, x25_000_to_49_999, x50_000_to_74_999, 
+               x75_000_to_125_000, x125_000) %>%
+        distinct(community, .keep_all = TRUE)
+    })
+    
+    # Topic counts
+    topic_counts <- reactive({
+      article_data %>%
+        count(topic_match, name = "article_count") %>%
+        arrange(desc(article_count)) %>%
+        mutate(
+          percentage = (article_count / sum(article_count)) * 100,
+          percentage_label = paste0(round(percentage, 1), "%")
+        )
+    })
+    
+    # Mapping summary
+    mapping_summary <- reactive({
+      article_data %>%
+        group_by(community) %>%
+        summarise(article_count = n(), .groups = "drop") %>%
+        arrange(desc(article_count))
+    })
+    
+    # Summary Metrics
+    output$total_articles <- renderText({
+      format(nrow(article_data), big.mark = ",")
+    })
+    
+    output$total_communities <- renderText({
+      nrow(mapping_summary())
+    })
+    
+    output$total_population <- renderText({
+      format(sum(census_summary()$total_population, na.rm = TRUE), big.mark = ",")
+    })
+    
+    output$topics_tracked <- renderText({
+      length(unique(article_data$topic_match))
+    })
+    
+    # Topic Distribution Plot
+    output$topic_plot <- renderPlot({
+      ggplot(topic_counts(), aes(x = reorder(topic_match, article_count), y = article_count)) +
+        geom_col(fill = "#667eea", alpha = 0.8) +
+        geom_text(aes(label = paste0(article_count, "\n(", percentage_label, ")")), 
+                  hjust = -0.1, size = 3.5) +
+        coord_flip() +
+        labs(
+          title = "Article Distribution by Topic",
+          subtitle = paste0("Total Articles: ", format(sum(topic_counts()$article_count), big.mark = ",")),
+          x = NULL,
+          y = "Number of Articles"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 16),
+          plot.subtitle = element_text(size = 12, color = "gray40"),
+          axis.text = element_text(size = 11)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    output$topic_table <- renderDataTable({
+      topic_counts() %>%
+        select(Topic = topic_match, 
+               `Article Count` = article_count, 
+               Percentage = percentage_label) %>%
+        datatable(
+          options = list(pageLength = 12, dom = 't'),
+          rownames = FALSE
+        )
+    })
+    
+    # Race/Ethnicity Plot
+    output$race_plot <- renderPlot({
+      race_totals <- census_summary() %>%
+        summarise(
+          White = sum(white, na.rm = TRUE),
+          Black = sum(black_or_african_american, na.rm = TRUE),
+          Asian = sum(asian, na.rm = TRUE),
+          Hispanic = sum(hispanic_or_latino, na.rm = TRUE)
+        ) %>%
+        pivot_longer(everything(), names_to = "race_ethnicity", values_to = "population") %>%
+        mutate(
+          percentage = (population / sum(population)) * 100,
+          percentage_label = paste0(round(percentage, 1), "%")
+        )
+      
+      ggplot(race_totals, aes(x = reorder(race_ethnicity, population), y = population)) +
+        geom_col(aes(fill = race_ethnicity), show.legend = FALSE) +
+        geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
+                  hjust = -0.1, size = 4) +
+        coord_flip() +
+        scale_fill_manual(values = c("#e74c3c", "#3498db", "#2ecc71", "#f39c12")) +
+        labs(
+          title = "Chicago Population by Race/Ethnicity",
+          x = NULL,
+          y = "Population"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text = element_text(size = 11)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    # Age Distribution Plot
+    output$age_plot <- renderPlot({
+      age_totals <- census_summary() %>%
+        summarise(
+          `0-17` = sum(age_0_17, na.rm = TRUE),
+          `18-24` = sum(age_18_24, na.rm = TRUE),
+          `25-34` = sum(age_25_34, na.rm = TRUE),
+          `35-49` = sum(age_35_49, na.rm = TRUE),
+          `50-64` = sum(age_50_64, na.rm = TRUE),
+          `65+` = sum(age_65_plus, na.rm = TRUE)
+        ) %>%
+        pivot_longer(everything(), names_to = "age_group", values_to = "population") %>%
+        mutate(
+          percentage = (population / sum(population)) * 100,
+          percentage_label = paste0(round(percentage, 1), "%")
+        )
+      
+      ggplot(age_totals, aes(x = age_group, y = population)) +
+        geom_col(fill = "#9b59b6", alpha = 0.8) +
+        geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
+                  vjust = -0.5, size = 3.5) +
+        labs(
+          title = "Chicago Population by Age Group",
+          x = "Age Group",
+          y = "Population"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text = element_text(size = 11)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    # Income Distribution Plot
+    output$income_plot <- renderPlot({
+      income_totals <- census_summary() %>%
+        summarise(
+          `Under $25k` = sum(under_25_000, na.rm = TRUE),
+          `$25k-$50k` = sum(x25_000_to_49_999, na.rm = TRUE),
+          `$50k-$75k` = sum(x50_000_to_74_999, na.rm = TRUE),
+          `$75k-$125k` = sum(x75_000_to_125_000, na.rm = TRUE),
+          `$125k+` = sum(x125_000, na.rm = TRUE)
+        ) %>%
+        pivot_longer(everything(), names_to = "income_bracket", values_to = "households") %>%
+        mutate(
+          percentage = (households / sum(households)) * 100,
+          percentage_label = paste0(round(percentage, 1), "%"),
+          income_bracket = factor(income_bracket, 
+                                  levels = c("Under $25k", "$25k-$50k", "$50k-$75k", 
+                                             "$75k-$125k", "$125k+"))
+        )
+      
+      ggplot(income_totals, aes(x = income_bracket, y = households)) +
+        geom_col(fill = "#16a085", alpha = 0.8) +
+        geom_text(aes(label = paste0(comma(households), "\n(", percentage_label, ")")), 
+                  vjust = -0.5, size = 3.5) +
+        labs(
+          title = "Chicago Households by Income Bracket",
+          x = "Income Bracket",
+          y = "Number of Households"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text.x = element_text(size = 10, angle = 15, hjust = 1)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    # Timeline Plot
+    output$timeline_plot <- renderPlot({
+      articles_by_month <- article_data %>%
+        mutate(year_month = floor_date(article_date, "month")) %>%
+        count(year_month, name = "article_count") %>%
+        arrange(year_month)
+      
+      ggplot(articles_by_month, aes(x = year_month, y = article_count)) +
+        geom_line(color = "#667eea", size = 1) +
+        geom_point(color = "#667eea", size = 2) +
+        labs(
+          title = "Article Publication Trend Over Time",
+          x = "Date",
+          y = "Articles Published"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text = element_text(size = 11)
+        ) +
+        scale_y_continuous(labels = comma) +
+        scale_x_date(date_breaks = "6 months", date_labels = "%b %Y")
+    })
+    
+    # Year Plot
+    output$year_plot <- renderPlot({
+      articles_by_year <- article_data %>%
+        mutate(year = year(article_date)) %>%
+        count(year, name = "article_count") %>%
+        arrange(year)
+      
+      ggplot(articles_by_year, aes(x = factor(year), y = article_count)) +
+        geom_col(fill = "#e67e22", alpha = 0.8) +
+        geom_text(aes(label = comma(article_count)), vjust = -0.5, size = 4) +
+        labs(
+          title = "Articles Published by Year",
+          x = "Year",
+          y = "Number of Articles"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text = element_text(size = 11)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    output$year_table <- renderDataTable({
+      article_data %>%
+        mutate(year = year(article_date)) %>%
+        count(year, name = "article_count") %>%
+        arrange(desc(year)) %>%
+        datatable(
+          options = list(pageLength = 10, dom = 't'),
+          rownames = FALSE,
+          colnames = c("Year", "Article Count")
+        )
+    })
+    
+    # Neighborhood Coverage Plot
+    output$neighborhood_plot <- renderPlot({
+      mapping_summary() %>%
+        top_n(20, article_count) %>%
+        ggplot(aes(x = reorder(community, article_count), y = article_count)) +
+        geom_col(fill = "#27ae60", alpha = 0.8) +
+        geom_text(aes(label = comma(article_count)), hjust = -0.1, size = 3) +
+        coord_flip() +
+        labs(
+          title = "Top 20 Neighborhoods by Article Coverage",
+          x = NULL,
+          y = "Number of Articles"
+        ) +
+        theme_minimal() +
+        theme(
+          plot.title = element_text(face = "bold", size = 14),
+          axis.text = element_text(size = 10)
+        ) +
+        scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
+    })
+    
+    output$top_neighborhoods_table <- renderDataTable({
+      mapping_summary() %>%
+        head(15) %>%
+        mutate(community = str_to_title(community)) %>%
+        datatable(
+          options = list(pageLength = 15, dom = 't'),
+          rownames = FALSE,
+          colnames = c("Community", "Article Count")
+        )
+    })
+    
+    output$low_coverage_table <- renderDataTable({
+      mapping_summary() %>%
+        filter(article_count < 10) %>%
+        mutate(community = str_to_title(community)) %>%
+        datatable(
+          options = list(pageLength = 10, dom = 't'),
+          rownames = FALSE,
+          colnames = c("Community", "Article Count")
+        )
+    })
+    
+    # Methodology Text
+    output$methodology_text <- renderText({
+      paste(
+        "NEIGHBORHOOD MAPPING METHODOLOGY",
+        "=================================",
+        "",
+        "This analysis maps Block Club Chicago articles to Chicago's 77 official",
+        "community areas using a hierarchical matching system:",
+        "",
+        "1. PRIMARY MATCHING (Sub-community field):",
+        "   - Extract lead text before em-dash/hyphen in article content",
+        "   - Match against neighborhood mapping table",
+        "   - If match found, use ONLY this neighborhood",
+        "",
+        "2. SECONDARY MATCHING (Article Sections):",
+        "   - If no primary match, parse parsely.meta.articleSection field",
+        "   - Check each section against mapping table",
+        "   - Collect ALL matching neighborhoods",
+        "",
+        "3. TERTIARY MATCHING (Primary Category):",
+        "   - If still no match, parse slp_primary_category.name field",
+        "   - Check each category against mapping table",
+        "   - Collect ALL matching neighborhoods",
+        "",
+        "4. DEFAULT ASSIGNMENT:",
+        "   - If no matches found, assign to 'chicago' (citywide)",
+        "",
+        "MULTI-NEIGHBORHOOD ARTICLES:",
+        "- Articles can be assigned to multiple neighborhoods (up to 3)",
+        "- This captures stories that span multiple communities",
+        "- Each assignment is stored in separate columns",
+        "",
+        paste0("DATA QUALITY SUMMARY:"),
+        paste0("- Total neighborhoods mapped: ", nrow(mapping_summary())),
+        paste0("- Total articles: ", format(nrow(article_data), big.mark = ",")),
+        paste0("- Avg articles per neighborhood: ", round(mean(mapping_summary()$article_count))),
+        sep = "\n"
+      )
+    })
+  })
+}

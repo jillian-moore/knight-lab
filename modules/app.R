@@ -11,13 +11,16 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(lubridate)
-
+library(DT)  # For data tables in quality module
+conflicts_prefer(DT::dataTableOutput)
+conflicts_prefer(shiny::renderDataTable)
 # source data clean ----
 load(here("data/full_data.rda"))
 
 # source modules ----
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
+source(here("modules/module3.R"))
 
 # UI ----
 ui <- navbarPage(
@@ -63,9 +66,15 @@ ui <- navbarPage(
              div(style = "text-align: right; padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;",
                  actionButton(
                    "goto_comparison",
-                   "Go to Community Comparison →",
+                   "Community Comparison →",
                    icon = icon("chart-line"),
                    class = "btn btn-primary btn-nav-custom"
+                 ),
+                 actionButton(
+                   "goto_quality",
+                   "Data Quality →",
+                   icon = icon("check-circle"),
+                   class = "btn btn-info btn-nav-custom"
                  )
              )
       )
@@ -85,15 +94,49 @@ ui <- navbarPage(
              div(style = "text-align: left; padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;",
                  actionButton(
                    "goto_map",
-                   "← Back to Map Explorer",
+                   "← Map Explorer",
                    icon = icon("map"),
                    class = "btn btn-secondary btn-nav-custom"
+                 ),
+                 actionButton(
+                   "goto_quality_from_comparison",
+                   "Data Quality →",
+                   icon = icon("check-circle"),
+                   class = "btn btn-info btn-nav-custom"
                  )
              )
       )
     ),
     
     communityComparisonUI("comparison")
+  ),
+  
+  tabPanel(
+    "Data Quality",
+    icon = icon("check-circle"),
+    value = "quality_tab",
+    
+    # Navigation buttons at the top
+    fluidRow(
+      column(12,
+             div(style = "text-align: left; padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #dee2e6;",
+                 actionButton(
+                   "goto_map_from_quality",
+                   "← Map Explorer",
+                   icon = icon("map"),
+                   class = "btn btn-secondary btn-nav-custom"
+                 ),
+                 actionButton(
+                   "goto_comparison_from_quality",
+                   "Community Comparison",
+                   icon = icon("chart-line"),
+                   class = "btn btn-primary btn-nav-custom"
+                 )
+             )
+      )
+    ),
+    
+    dataQualityUI("quality")
   )
 )
 
@@ -101,12 +144,31 @@ ui <- navbarPage(
 server <- function(input, output, session) {
   
   # Navigation observers
+  # From Map Explorer
   observeEvent(input$goto_comparison, {
     updateNavbarPage(session, "main_navbar", selected = "comparison_tab")
   })
   
+  observeEvent(input$goto_quality, {
+    updateNavbarPage(session, "main_navbar", selected = "quality_tab")
+  })
+  
+  # From Community Comparison
   observeEvent(input$goto_map, {
     updateNavbarPage(session, "main_navbar", selected = "map_tab")
+  })
+  
+  observeEvent(input$goto_quality_from_comparison, {
+    updateNavbarPage(session, "main_navbar", selected = "quality_tab")
+  })
+  
+  # From Data Quality
+  observeEvent(input$goto_map_from_quality, {
+    updateNavbarPage(session, "main_navbar", selected = "map_tab")
+  })
+  
+  observeEvent(input$goto_comparison_from_quality, {
+    updateNavbarPage(session, "main_navbar", selected = "comparison_tab")
   })
   
   # Map Explorer Module
@@ -123,6 +185,13 @@ server <- function(input, output, session) {
   communityComparisonServer(
     "comparison",
     full_data = full_data
+  )
+  
+  # Data Quality Module
+  dataQualityServer(
+    "quality",
+    chi_boundaries_sf = chi_boundaries_sf,
+    article_data = article_data
   )
 }
 

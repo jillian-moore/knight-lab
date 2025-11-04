@@ -97,10 +97,10 @@ mapExplorerUI <- function(id) {
              
              div(class = "control-section",
                  h4("📅 Time Period"),
-                 sliderInput(ns("month_slider"), NULL,
+                 sliderInput(ns("date_range_slider"), NULL,
                              min = as.Date("2020-01-01"),
                              max = Sys.Date(),
-                             value = Sys.Date(),
+                             value = c(as.Date("2020-01-01"), Sys.Date()),
                              step = 31,
                              animate = animationOptions(interval = 2000, loop = TRUE))
              )
@@ -129,10 +129,10 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       updateSelectInput(session, "demo_var", 
                         choices = demo_choices, 
                         selected = "None")
-      updateSliderInput(session, "month_slider",
+      updateSliderInput(session, "date_range_slider",
                         min = date_range$min_date,
                         max = date_range$max_date,
-                        value = date_range$max_date)
+                        value = c(date_range$min_date, date_range$max_date))
     })
     
     # base census data 
@@ -148,14 +148,16 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         distinct(community, .keep_all = TRUE)
     }) %>% bindCache("base_census_data")
     
-    # filter articles based on date and topic
+    # filter articles based on date range and topic
     filtered_topic_data <- reactive({
-      req(input$month_slider, input$blue_var)
+      req(input$date_range_slider, input$blue_var)
       
       df <- article_data
       
-      # filter by date
-      df <- df %>% filter(article_date <= input$month_slider)
+      # filter by date range
+      df <- df %>% 
+        filter(article_date >= input$date_range_slider[1],
+               article_date <= input$date_range_slider[2])
       
       # filter by topic if selected
       if (input$blue_var != "None") {
@@ -178,7 +180,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         mutate(article_count = replace_na(article_count, 0))
       
       topic_summary
-    }) %>% bindCache(input$month_slider, input$blue_var)
+    }) %>% bindCache(input$date_range_slider, input$blue_var)
     
     # initialize map once
     output$map <- renderLeaflet({
@@ -350,8 +352,9 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
     
     # date range text
     output$date_range_text <- renderText({
-      paste0("📅 Data Range: ", format(date_range$min_date, "%b %Y"), 
-             " - ", format(date_range$max_date, "%b %Y"),
+      req(input$date_range_slider)
+      paste0("📅 Selected Period: ", format(input$date_range_slider[1], "%b %Y"), 
+             " - ", format(input$date_range_slider[2], "%b %Y"),
              " • 📊 Census: ACS 2020-2024")
     })
   })

@@ -20,6 +20,7 @@ load(here("data/full_data.rda"))
 # SOURCE MODULES ----
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
+source(here("data_clean_by_jillian.R"))
 
 # PREPARE SPATIAL DATA (load once at startup for caching efficiency) ----
 chi_boundaries_sf <- chi_boundaries_clean %>%

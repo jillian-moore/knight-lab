@@ -1,7 +1,6 @@
-# comparison_module.R
-# Module for comparing two Chicago community areas
+# WARD COMPARISON
 
-# UI Function ----
+# UI ----
 communityComparisonUI <- function(id) {
   ns <- NS(id)
   
@@ -120,7 +119,7 @@ communityComparisonServer <- function(id, full_data) {
                         selected = community_choices[min(2, length(community_choices))])
     })
     
-    # CACHED: Reactive data for selected wards
+    # CACHED: reactive data for selected wards
     ward_data <- reactive({
       req(input$ward1, input$ward2)
       
@@ -133,7 +132,7 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # CACHED: Summary Statistics Table
+    # CACHED: summary statistics table
     summary_stats <- reactive({
       req(ward_data())
       
@@ -157,7 +156,7 @@ communityComparisonServer <- function(id, full_data) {
       summary_stats()
     }, striped = TRUE, hover = TRUE, bordered = TRUE)
     
-    # CACHED: Line chart data
+    # line chart data
     line_data <- reactive({
       req(ward_data())
       

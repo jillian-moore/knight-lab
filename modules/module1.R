@@ -1,7 +1,6 @@
-# map_explorer_module.R
-# Module for the Chicago Community Coverage Explorer
+# DATA VIZ
 
-# UI Function ----
+# UI ----
 mapExplorerUI <- function(id) {
   ns <- NS(id)
   
@@ -117,12 +116,12 @@ mapExplorerUI <- function(id) {
   )
 }
 
-# Server Function ----
+# server ----
 mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range, 
                               topics, demo_choices) {
   moduleServer(id, function(input, output, session) {
     
-    # Update choices on module initialization
+    # update choices on module initialization
     observe({
       updateSelectInput(session, "blue_var", 
                         choices = c("None", topics), 
@@ -136,7 +135,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
                         value = date_range$max_date)
     })
     
-    # CACHED: Base census data (doesn't change)
+    # base census data 
     base_census_data <- reactive({
       chi_boundaries_sf %>%
         select(community, total_population, white, black_or_african_american, 
@@ -149,26 +148,26 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         distinct(community, .keep_all = TRUE)
     }) %>% bindCache("base_census_data")
     
-    # CACHED: Filter articles based on date and topic
+    # filter articles based on date and topic
     filtered_topic_data <- reactive({
       req(input$month_slider, input$blue_var)
       
       df <- article_data
       
-      # Filter by date
+      # filter by date
       df <- df %>% filter(article_date <= input$month_slider)
       
-      # Filter by topic if selected
+      # filter by topic if selected
       if (input$blue_var != "None") {
         df <- df %>% filter(topic_match == input$blue_var)
       }
       
-      # Count articles per community
+      # count articles per community
       topic_summary <- df %>%
         group_by(community) %>%
         summarise(article_count = n(), .groups = "drop")
       
-      # Ensure all communities are represented
+      # ensure all communities are represented
       all_communities <- data.frame(
         community = unique(chi_boundaries_sf$community),
         stringsAsFactors = FALSE
@@ -181,20 +180,20 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       topic_summary
     }) %>% bindCache(input$month_slider, input$blue_var)
     
-    # Initialize map once
+    # initialize map once
     output$map <- renderLeaflet({
       leaflet(chi_boundaries_sf) |> 
         addProviderTiles(providers$CartoDB.Positron) |>
         setView(lng = -87.65, lat = 41.84, zoom = 10)
     })
     
-    # Update map polygons
+    # update map polygons
     observe({
       map_data <- chi_boundaries_sf
       topic_data <- filtered_topic_data()
       census_data <- base_census_data()
       
-      # Join data
+      # join data
       map_data <- map_data %>%
         left_join(topic_data, by = "community") %>%
         select(-any_of(names(census_data)[-1])) %>%
@@ -202,7 +201,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       
       map_data$article_count <- replace_na(map_data$article_count, 0)
       
-      # Calculate display value
+      # calculate display value
       if (input$metric_type == "per_capita") {
         map_data <- map_data %>%
           mutate(display_value = if_else(total_population > 0, 
@@ -215,7 +214,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       
       n <- nrow(map_data)
       
-      # Blue intensity (articles)
+      # blue intensity (articles)
       blue_intensity <- rep(0, n)
       if (input$blue_var != "None") {
         max_val <- max(map_data$display_value, na.rm = TRUE)
@@ -225,7 +224,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         }
       }
       
-      # Yellow intensity (demographics)
+      # yellow intensity (demographics)
       yellow_intensity <- rep(0, n)
       if (input$demo_var != "None" && input$demo_var %in% names(map_data)) {
         demo_vals <- suppressWarnings(as.numeric(map_data[[input$demo_var]]))
@@ -237,11 +236,11 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         }
       }
       
-      # Determine colors
+      # determine colors
       fill_colors <- rep("#E8E8E8", n)
       
       if (input$blue_var != "None" && (input$demo_var == "None")) {
-        # Blue gradient only
+        # blue gradient only
         fill_colors <- sapply(1:n, function(i) {
           intensity <- blue_intensity[i]
           if (intensity == 0) return("#E8E8E8")
@@ -251,7 +250,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var == "None" && input$demo_var != "None") {
-        # Yellow gradient only
+        # yellow gradient only
         fill_colors <- sapply(1:n, function(i) {
           intensity <- yellow_intensity[i]
           if (intensity == 0) return("#E8E8E8")
@@ -261,7 +260,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var != "None" && input$demo_var != "None") {
-        # Green blend
+        # green blend
         fill_colors <- sapply(1:n, function(i) {
           blue_val <- blue_intensity[i]
           yellow_val <- yellow_intensity[i]
@@ -288,7 +287,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         })
       }
       
-      # Create labels
+      # create labels
       labels <- lapply(1:n, function(i) {
         row_data <- map_data[i, ]
         label_text <- paste0("<b style='font-size: 14px;'>", str_to_title(row_data$community), "</b><br>")
@@ -349,7 +348,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         )
     })
     
-    # Date range text
+    # date range text
     output$date_range_text <- renderText({
       paste0("📅 Data Range: ", format(date_range$min_date, "%b %Y"), 
              " - ", format(date_range$max_date, "%b %Y"),

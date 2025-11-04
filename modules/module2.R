@@ -102,11 +102,11 @@ communityComparisonUI <- function(id) {
   )
 }
 
-# Server Function ----
+# server ----
 communityComparisonServer <- function(id, full_data) {
   moduleServer(id, function(input, output, session) {
     
-    # Initialize community choices
+    # initialize community choices
     observe({
       community_choices <- sort(unique(full_data$community))
       names(community_choices) <- str_to_title(community_choices)
@@ -119,7 +119,7 @@ communityComparisonServer <- function(id, full_data) {
                         selected = community_choices[min(2, length(community_choices))])
     })
     
-    # CACHED: reactive data for selected wards
+    # reactive data for selected wards
     ward_data <- reactive({
       req(input$ward1, input$ward2)
       
@@ -132,7 +132,7 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # CACHED: summary statistics table
+    # summary statistics table
     summary_stats <- reactive({
       req(ward_data())
       
@@ -192,7 +192,7 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # CACHED: Pie chart data
+    # pie chart data
     pie_data <- reactive({
       req(ward_data())
       
@@ -223,7 +223,7 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # CACHED: Stacked bar data
+    # stacked bar data
     bar_data <- reactive({
       req(ward_data())
       

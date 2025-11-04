@@ -313,7 +313,6 @@ api_long <- api_clean |>
 api_detail <- api_long |> 
   select(community, random_topic, date, year, month, year_month)
 
-# prep for shiny app ----
 # get date range for slider
 date_range <- api_long |> 
   summarise(
@@ -361,7 +360,7 @@ full_data <- full_data |>
                                 (total_articles / total_population) * 1000, 
                                 0),
     
-    # Articles by AGE demographic
+    # Articles per 1,000 by TOTAL POPULATION
     topic_articles_per_0_17 = if_else(age_0_17 > 0, 
                                       article_count / age_0_17, 
                                       0),
@@ -381,109 +380,52 @@ full_data <- full_data |>
                                          article_count / age_65_plus, 
                                          0),
     
-    # Articles by RACE/ETHNICITY
+    # Articles per 1,000 by RACE/ETHNICITY
     articles_per_white = if_else(white > 0, 
-                                 article_count / white, 
+                                 article_count / white * 1000, 
                                  0),
     articles_per_black = if_else(black_or_african_american > 0, 
-                                 article_count / black_or_african_american, 
+                                 article_count / black_or_african_american * 1000, 
                                  0),
     articles_per_asian = if_else(asian > 0, 
-                                 article_count / asian, 
+                                 article_count / asian * 1000, 
                                  0),
     articles_per_native_american = if_else(american_indian_or_alaska_native > 0, 
-                                           article_count / american_indian_or_alaska_native, 
+                                           article_count / american_indian_or_alaska_native * 1000, 
                                            0),
     articles_per_pacific_islander = if_else(native_hawaiian_or_pacific_islander > 0, 
-                                            article_count / native_hawaiian_or_pacific_islander, 
+                                            article_count / native_hawaiian_or_pacific_islander * 1000, 
                                             0),
     articles_per_other_race = if_else(other_race > 0, 
-                                      article_count / other_race, 
+                                      article_count / other_race * 1000, 
                                       0),
     articles_per_multiracial = if_else(multiracial > 0, 
-                                       article_count / multiracial, 
+                                       article_count / multiracial * 1000, 
                                        0),
     articles_per_hispanic = if_else(hispanic_or_latino > 0, 
-                                    article_count / hispanic_or_latino, 
+                                    article_count / hispanic_or_latino * 1000, 
                                     0),
     articles_per_white_non_hispanic = if_else(white_not_hispanic_or_latino > 0, 
-                                              article_count / white_not_hispanic_or_latino, 
+                                              article_count / white_not_hispanic_or_latino * 1000, 
                                               0),
     
-    # Articles by INCOME bracket
+    # Articles per 1,000 by INCOME bracket
     articles_per_under_25k = if_else(under_25_000 > 0, 
-                                     article_count / under_25_000, 
+                                     article_count / under_25_000 * 1000, 
                                      0),
     articles_per_25k_to_50k = if_else(x25_000_to_49_999 > 0, 
-                                      article_count / x25_000_to_49_999, 
+                                      article_count / x25_000_to_49_999 * 1000, 
                                       0),
     articles_per_50k_to_75k = if_else(x50_000_to_74_999 > 0, 
-                                      article_count / x50_000_to_74_999, 
+                                      article_count / x50_000_to_74_999 * 1000, 
                                       0),
     articles_per_75k_to_125k = if_else(x75_000_to_125_000 > 0, 
-                                       article_count / x75_000_to_125_000, 
+                                       article_count / x75_000_to_125_000 * 1000, 
                                        0),
     articles_per_over_125k = if_else(x125_000 > 0, 
-                                     article_count / x125_000, 
+                                     article_count / x125_000 * 1000, 
                                      0)
   )
 
-# prepare spatial data for mapping
-chi_boundaries_sf <- chi_boundaries_clean |>
-  mutate(
-    the_geom_parsed = lapply(the_geom, function(wkt) {
-      tryCatch(st_as_sfc(wkt, crs = 4326), error = function(e) NULL)
-    })
-  ) |>
-  filter(!sapply(the_geom_parsed, is.null)) |>
-  mutate(the_geom = st_sfc(do.call(c, the_geom_parsed), crs = 4326)) |>
-  select(-the_geom_parsed) |>
-  st_as_sf(sf_column_name = "the_geom")
-
-# prepare article data
-article_data <- api_detail |>
-  rename(topic_match = random_topic, article_date = date)
-
-# set date range
-date_range <- list(
-  min_date = date_range$min_date,
-  max_date = date_range$max_date
-)
-
-# topic choices
-topic_choices <- topics
-
-# demographic choices
-demo_choices <- c(
-  "None" = "None",
-  "White" = "white",
-  "Black or African American" = "black_or_african_american",
-  "American Indian or Alaska Native" = "american_indian_or_alaska_native",
-  "Asian" = "asian",
-  "Native Hawaiian or Pacific Islander" = "native_hawaiian_or_pacific_islander",
-  "Other Race" = "other_race",
-  "Multiracial" = "multiracial",
-  "Hispanic or Latino" = "hispanic_or_latino",
-  "Under $25,000" = "under_25_000",
-  "$25,000 to $49,999" = "x25_000_to_49_999",
-  "$50,000 to $74,999" = "x50_000_to_74_999",
-  "$75,000 to $125,000" = "x75_000_to_125_000",
-  "$125,000 +" = "x125_000",
-  "0 to 17" = "age_0_17",
-  "18 to 24" = "age_18_24",
-  "25 to 34" = "age_25_34",
-  "35 to 49" = "age_35_49",
-  "50 to 64" = "age_50_64",
-  "65+" = "age_65_plus"
-)
-
 # save out ----
-save(
-  full_data,
-  chi_boundaries_sf,
-  article_data,
-  date_range,
-  topic_choices,
-  demo_choices,
-  file = here("data/full_data.rda")
-)
+save(full_data, file = here("data/full_data.rda"))

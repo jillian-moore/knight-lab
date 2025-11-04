@@ -13,3 +13,12 @@ data/.DS_Store
 data/*.rds
 data/*.rda
 
+<<<<<<< HEAD
+=======
+.DS_Store
+.Rhistory
+.RData
+.Rproj.user/
+.Renviron
+.env
+>>>>>>> 35df864 (Reinitialize project and restore files)

@@ -1,4 +1,4 @@
-# WARD COMPARISON
+# WARD COMPARISON - MODULE 2
 
 # UI ----
 communityComparisonUI <- function(id) {
@@ -39,6 +39,67 @@ communityComparisonUI <- function(id) {
           font-weight: 600;
           border-bottom: 2px solid #f0f0f0;
           padding-bottom: 8px;
+          margin-bottom: 15px;
+        }
+        .community-selector-card {
+          background: white;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          border: 1px solid #e8ebf0;
+        }
+        .community-selector-header {
+          font-size: 14px;
+          font-weight: 600;
+          color: #667eea;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 12px;
+        }
+        .stat-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 16px;
+          margin-bottom: 10px;
+          background: #f8f9fa;
+          border-radius: 6px;
+          border-left: 4px solid #667eea;
+        }
+        .stat-item-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .stat-item-value {
+          font-size: 17px;
+          font-weight: 700;
+          color: #24292e;
+        }
+        .predominant-box {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          padding: 12px 16px;
+          border-radius: 6px;
+          margin-bottom: 10px;
+          border-left: 4px solid #f59e0b;
+        }
+        .predominant-title {
+          font-size: 10px;
+          font-weight: 700;
+          color: #92400e;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 5px;
+        }
+        .predominant-value {
+          font-size: 14px;
+          font-weight: 700;
+          color: #b45309;
+        }
+        .demographic-selector {
+          margin-bottom: 15px;
         }
       "))
     ),
@@ -48,34 +109,29 @@ communityComparisonUI <- function(id) {
         p("Compare news coverage and demographics between two Chicago neighborhoods")
     ),
     
+    # Community selectors with stat cards
     fluidRow(
       column(6,
-             div(class = "control-section",
-                 h4("📍 Select First Community Area"),
+             div(class = "community-selector-card",
+                 div(class = "community-selector-header", "📍 First Community Area"),
                  selectInput(ns("ward1"), NULL,
                              choices = NULL,
-                             selected = NULL)
+                             selected = NULL),
+                 uiOutput(ns("stat_card1"))
              )
       ),
       column(6,
-             div(class = "control-section",
-                 h4("📍 Select Second Community Area"),
+             div(class = "community-selector-card",
+                 div(class = "community-selector-header", "📍 Second Community Area"),
                  selectInput(ns("ward2"), NULL,
                              choices = NULL,
-                             selected = NULL)
+                             selected = NULL),
+                 uiOutput(ns("stat_card2"))
              )
       )
     ),
     
-    fluidRow(
-      column(12,
-             div(class = "control-section",
-                 h3("Summary Statistics"),
-                 tableOutput(ns("summary_table"))
-             )
-      )
-    ),
-    
+    # Charts section
     fluidRow(
       column(6,
              div(class = "control-section",
@@ -85,8 +141,14 @@ communityComparisonUI <- function(id) {
       ),
       column(6,
              div(class = "control-section",
-                 h4("Article Topics Distribution"),
-                 plotOutput(ns("pie_chart"), height = "350px")
+                 h4("Population Distribution Comparison"),
+                 div(class = "demographic-selector",
+                     radioButtons(ns("pyramid_type"), "Select Demographic:",
+                                  choices = c("Age" = "age", "Race" = "race", "Income" = "income"),
+                                  selected = "age",
+                                  inline = TRUE)
+                 ),
+                 plotOutput(ns("population_pyramid"), height = "350px")
              )
       )
     ),
@@ -103,19 +165,36 @@ communityComparisonUI <- function(id) {
 }
 
 # server ----
-communityComparisonServer <- function(id, full_data) {
+communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
+    
+    # Helper function to find predominant category
+    find_predominant <- function(values, labels) {
+      if (all(is.na(values)) || all(values == 0)) {
+        return(list(label = "N/A", value = 0))
+      }
+      max_idx <- which.max(values)
+      list(label = labels[max_idx], value = values[max_idx])
+    }
     
     # initialize community choices
     observe({
       community_choices <- sort(unique(full_data$community))
       names(community_choices) <- str_to_title(community_choices)
       
+      # Check if ward1 is pre-selected from map click
+      ward1_default <- if (!is.null(selected_ward1()) && selected_ward1() != "") {
+        selected_ward1()
+      } else {
+        community_choices[1]
+      }
+      
       updateSelectInput(session, "ward1", 
                         choices = community_choices,
-                        selected = community_choices[1])
+                        selected = ward1_default)
       updateSelectInput(session, "ward2", 
-                        choices = community_choices,
+                        choices = community_choices
+                        ,
                         selected = community_choices[min(2, length(community_choices))])
     })
     
@@ -132,29 +211,182 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # summary statistics table
-    summary_stats <- reactive({
+    # Get census data for selected communities
+    census_summary <- reactive({
       req(ward_data())
       
       ward_data() %>%
-        group_by(community_label) %>%
+        group_by(community, community_label) %>%
         summarise(
-          `Total Articles` = sum(article_count, na.rm = TRUE),
-          `Population` = format(first(total_population), big.mark = ","),
-          `Articles per 1,000` = round(sum(article_count, na.rm = TRUE) / first(total_population) * 1000, 2),
-          `Most Common Topic` = {
-            topic_counts <- table(random_topic[random_topic != "No Coverage"])
-            if(length(topic_counts) > 0) names(which.max(topic_counts)) else "N/A"
-          },
-          `Date Range` = paste(format(min(date), "%b %Y"), "-", format(max(date), "%b %Y")),
+          total_population = first(total_population),
+          white = first(white),
+          black_or_african_american = first(black_or_african_american),
+          asian = first(asian),
+          hispanic_or_latino = first(hispanic_or_latino),
+          other_race = first(other_race),
+          multiracial = first(multiracial),
+          native_hawaiian_or_pacific_islander = first(native_hawaiian_or_pacific_islander),
+          american_indian_or_alaska_native = first(american_indian_or_alaska_native),
+          age_0_17 = first(age_0_17),
+          age_18_24 = first(age_18_24),
+          age_25_34 = first(age_25_34),
+          age_35_49 = first(age_35_49),
+          age_50_64 = first(age_50_64),
+          age_65_plus = first(age_65_plus),
+          under_25_000 = first(under_25_000),
+          x25_000_to_49_999 = first(x25_000_to_49_999),
+          x50_000_to_74_999 = first(x50_000_to_74_999),
+          x75_000_to_125_000 = first(x75_000_to_125_000),
+          x125_000 = first(x125_000),
+          total_articles = sum(article_count, na.rm = TRUE),
           .groups = "drop"
         ) %>%
-        rename(`Community Area` = community_label)
+        # Maintain selection order
+        mutate(order = case_when(
+          community == input$ward1 ~ 1,
+          community == input$ward2 ~ 2,
+          TRUE ~ 3
+        )) %>%
+        arrange(order)
     }) %>% bindCache(input$ward1, input$ward2)
     
-    output$summary_table <- renderTable({
-      summary_stats()
-    }, striped = TRUE, hover = TRUE, bordered = TRUE)
+    # Create stat card for community 1
+    output$stat_card1 <- renderUI({
+      req(census_summary())
+      stats <- census_summary()
+      
+      if (nrow(stats) < 1) return(NULL)
+      stats_row <- stats[1, ]
+      
+      # Find predominant categories
+      race_values <- c(
+        stats_row$white, 
+        stats_row$black_or_african_american, 
+        stats_row$asian, 
+        stats_row$hispanic_or_latino,
+        stats_row$other_race + stats_row$multiracial + 
+          stats_row$native_hawaiian_or_pacific_islander + 
+          stats_row$american_indian_or_alaska_native
+      )
+      race_labels <- c("White", "Black/African American", "Asian", "Hispanic/Latino", "Other/Multiracial")
+      predominant_race <- find_predominant(race_values, race_labels)
+      
+      age_values <- c(
+        stats_row$age_0_17,
+        stats_row$age_18_24,
+        stats_row$age_25_34,
+        stats_row$age_35_49,
+        stats_row$age_50_64,
+        stats_row$age_65_plus
+      )
+      age_labels <- c("0-17 years", "18-24 years", "25-34 years", "35-49 years", "50-64 years", "65+ years")
+      predominant_age <- find_predominant(age_values, age_labels)
+      
+      income_values <- c(
+        stats_row$under_25_000,
+        stats_row$x25_000_to_49_999,
+        stats_row$x50_000_to_74_999,
+        stats_row$x75_000_to_125_000,
+        stats_row$x125_000
+      )
+      income_labels <- c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+")
+      predominant_income <- find_predominant(income_values, income_labels)
+      
+      tagList(
+        div(class = "stat-item",
+            span(class = "stat-item-label", "Total Articles"),
+            span(class = "stat-item-value", format(stats_row$total_articles, big.mark = ","))
+        ),
+        div(class = "stat-item",
+            span(class = "stat-item-label", "Total Population"),
+            span(class = "stat-item-value", format(stats_row$total_population, big.mark = ","))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Age"),
+            div(class = "predominant-value", 
+                paste0(predominant_age$label, " (", format(predominant_age$value, big.mark = ","), ")"))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Race"),
+            div(class = "predominant-value", 
+                paste0(predominant_race$label, " (", format(predominant_race$value, big.mark = ","), ")"))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Income"),
+            div(class = "predominant-value", 
+                paste0(predominant_income$label, " (", format(predominant_income$value, big.mark = ","), ")"))
+        )
+      )
+    })
+    
+    # Create stat card for community 2
+    output$stat_card2 <- renderUI({
+      req(census_summary())
+      stats <- census_summary()
+      
+      if (nrow(stats) < 2) return(NULL)
+      stats_row <- stats[2, ]
+      
+      # Find predominant categories
+      race_values <- c(
+        stats_row$white, 
+        stats_row$black_or_african_american, 
+        stats_row$asian, 
+        stats_row$hispanic_or_latino,
+        stats_row$other_race + stats_row$multiracial + 
+          stats_row$native_hawaiian_or_pacific_islander + 
+          stats_row$american_indian_or_alaska_native
+      )
+      race_labels <- c("White", "Black/African American", "Asian", "Hispanic/Latino", "Other/Multiracial")
+      predominant_race <- find_predominant(race_values, race_labels)
+      
+      age_values <- c(
+        stats_row$age_0_17,
+        stats_row$age_18_24,
+        stats_row$age_25_34,
+        stats_row$age_35_49,
+        stats_row$age_50_64,
+        stats_row$age_65_plus
+      )
+      age_labels <- c("0-17 years", "18-24 years", "25-34 years", "35-49 years", "50-64 years", "65+ years")
+      predominant_age <- find_predominant(age_values, age_labels)
+      
+      income_values <- c(
+        stats_row$under_25_000,
+        stats_row$x25_000_to_49_999,
+        stats_row$x50_000_to_74_999,
+        stats_row$x75_000_to_125_000,
+        stats_row$x125_000
+      )
+      income_labels <- c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+")
+      predominant_income <- find_predominant(income_values, income_labels)
+      
+      tagList(
+        div(class = "stat-item",
+            span(class = "stat-item-label", "Total Articles"),
+            span(class = "stat-item-value", format(stats_row$total_articles, big.mark = ","))
+        ),
+        div(class = "stat-item",
+            span(class = "stat-item-label", "Total Population"),
+            span(class = "stat-item-value", format(stats_row$total_population, big.mark = ","))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Age"),
+            div(class = "predominant-value", 
+                paste0(predominant_age$label, " (", format(predominant_age$value, big.mark = ","), ")"))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Race"),
+            div(class = "predominant-value", 
+                paste0(predominant_race$label, " (", format(predominant_race$value, big.mark = ","), ")"))
+        ),
+        div(class = "predominant-box",
+            div(class = "predominant-title", "Predominant Income"),
+            div(class = "predominant-value", 
+                paste0(predominant_income$label, " (", format(predominant_income$value, big.mark = ","), ")"))
+        )
+      )
+    })
     
     # line chart data
     line_data <- reactive({
@@ -192,36 +424,107 @@ communityComparisonServer <- function(id, full_data) {
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # pie chart data
-    pie_data <- reactive({
-      req(ward_data())
+    # Population pyramid data
+    pyramid_data <- reactive({
+      req(census_summary(), input$pyramid_type)
       
-      ward_data() %>%
-        filter(random_topic != "No Coverage") %>%
-        group_by(community_label, random_topic) %>%
-        summarise(total = sum(article_count, na.rm = TRUE), .groups = "drop") %>%
-        group_by(community_label) %>%
-        mutate(
-          percentage = total / sum(total) * 100,
-          label = paste0(random_topic, "\n", round(percentage, 1), "%")
+      stats <- census_summary()
+      
+      if (input$pyramid_type == "age") {
+        # Age distribution
+        data.frame(
+          community = rep(stats$community_label, each = 6),
+          category = rep(c("0-17", "18-24", "25-34", "35-49", "50-64", "65+"), times = nrow(stats)),
+          value = c(
+            stats$age_0_17[1], stats$age_18_24[1], stats$age_25_34[1], 
+            stats$age_35_49[1], stats$age_50_64[1], stats$age_65_plus[1],
+            if(nrow(stats) > 1) c(stats$age_0_17[2], stats$age_18_24[2], stats$age_25_34[2], 
+                                  stats$age_35_49[2], stats$age_50_64[2], stats$age_65_plus[2]) else rep(0, 6)
+          ),
+          stringsAsFactors = FALSE
         )
-    }) %>% bindCache(input$ward1, input$ward2)
+      } else if (input$pyramid_type == "race") {
+        # Race distribution
+        data.frame(
+          community = rep(stats$community_label, each = 5),
+          category = rep(c("White", "Black", "Asian", "Hispanic", "Other"), times = nrow(stats)),
+          value = c(
+            stats$white[1], stats$black_or_african_american[1], stats$asian[1], 
+            stats$hispanic_or_latino[1], 
+            stats$other_race[1] + stats$multiracial[1] + stats$native_hawaiian_or_pacific_islander[1] + stats$american_indian_or_alaska_native[1],
+            if(nrow(stats) > 1) c(
+              stats$white[2], stats$black_or_african_american[2], stats$asian[2], 
+              stats$hispanic_or_latino[2], 
+              stats$other_race[2] + stats$multiracial[2] + stats$native_hawaiian_or_pacific_islander[2] + stats$american_indian_or_alaska_native[2]
+            ) else rep(0, 5)
+          ),
+          stringsAsFactors = FALSE
+        )
+      } else {
+        # Income distribution
+        data.frame(
+          community = rep(stats$community_label, each = 5),
+          category = rep(c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+"), times = nrow(stats)),
+          value = c(
+            stats$under_25_000[1], stats$x25_000_to_49_999[1], stats$x50_000_to_74_999[1], 
+            stats$x75_000_to_125_000[1], stats$x125_000[1],
+            if(nrow(stats) > 1) c(
+              stats$under_25_000[2], stats$x25_000_to_49_999[2], stats$x50_000_to_74_999[2], 
+              stats$x75_000_to_125_000[2], stats$x125_000[2]
+            ) else rep(0, 5)
+          ),
+          stringsAsFactors = FALSE
+        )
+      }
+    }) %>% bindCache(input$ward1, input$ward2, input$pyramid_type)
     
-    output$pie_chart <- renderPlot({
-      req(pie_data())
+    output$population_pyramid <- renderPlot({
+      req(pyramid_data())
       
-      ggplot(pie_data(), aes(x = "", y = total, fill = random_topic)) +
-        geom_bar(stat = "identity", width = 1) +
-        coord_polar("y", start = 0) +
-        facet_wrap(~ community_label) +
-        scale_fill_brewer(palette = "Set3") +
-        labs(fill = "Topic") +
-        theme_void(base_size = 11) +
-        theme(
-          legend.position = "right",
-          strip.text = element_text(size = 12, face = "bold")
+      pyr_data <- pyramid_data()
+      
+      # Create directional values for pyramid (left = negative, right = positive)
+      pyr_data <- pyr_data %>%
+        group_by(community) %>%
+        mutate(
+          direction = ifelse(row_number() <= n()/2 | community == first(community), -1, 1),
+          plot_value = value * direction
+        ) %>%
+        ungroup()
+      
+      # Get the two community names in order
+      communities <- unique(pyr_data$community)
+      
+      # Make first community negative (left), second positive (right)
+      pyr_data <- pyr_data %>%
+        mutate(
+          plot_value = ifelse(community == communities[1], -abs(value), abs(value))
         )
-    }) %>% bindCache(input$ward1, input$ward2)
+      
+      # Find max value for x-axis limits
+      max_val <- max(abs(pyr_data$value), na.rm = TRUE)
+      
+      ggplot(pyr_data, aes(x = plot_value, y = category, fill = community)) +
+        geom_bar(stat = "identity") +
+        scale_fill_manual(values = c("#667eea", "#f093fb")) +
+        scale_x_continuous(
+          labels = function(x) format(abs(x), big.mark = ","),
+          limits = c(-max_val * 1.1, max_val * 1.1)
+        ) +
+        labs(
+          x = "Population",
+          y = NULL,
+          fill = "Community"
+        ) +
+        theme_minimal(base_size = 12) +
+        theme(
+          legend.position = "top",
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text.y = element_text(size = 11, face = "bold")
+        ) +
+        geom_vline(xintercept = 0, color = "gray30", size = 0.5)
+    }) %>% bindCache(input$ward1, input$ward2, input$pyramid_type)
     
     # stacked bar data
     bar_data <- reactive({

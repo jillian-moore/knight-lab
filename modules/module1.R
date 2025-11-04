@@ -1,4 +1,4 @@
-# DATA VIZ
+# DATA VIZ - MODULE 1
 
 # UI ----
 mapExplorerUI <- function(id) {
@@ -62,6 +62,103 @@ mapExplorerUI <- function(id) {
           color: #155724;
           border: 1px solid #c3e6cb;
         }
+        .leaflet-popup-content-wrapper {
+          border-radius: 16px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+          padding: 0;
+          overflow: hidden;
+          min-width: 340px;
+        }
+        .leaflet-popup-content {
+          margin: 0;
+          width: auto !important;
+        }
+        .popup-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          padding: 20px 24px;
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+        }
+        .popup-body {
+          padding: 20px 24px;
+          background: white;
+        }
+        .popup-section {
+          margin-bottom: 20px;
+        }
+        .popup-section:last-child {
+          margin-bottom: 0;
+        }
+        .popup-section-title {
+          font-size: 11px;
+          font-weight: 700;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          margin-bottom: 12px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #e5e7eb;
+        }
+        .popup-stat-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 0;
+          border-bottom: 1px solid #f3f4f6;
+        }
+        .popup-stat-row:last-child {
+          border-bottom: none;
+        }
+        .popup-stat-label {
+          font-size: 13px;
+          font-weight: 500;
+          color: #374151;
+        }
+        .popup-stat-value {
+          font-size: 15px;
+          font-weight: 700;
+          color: #667eea;
+        }
+        .popup-highlight {
+          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-top: 12px;
+          border-left: 4px solid #f59e0b;
+        }
+        .popup-highlight-label {
+          font-size: 11px;
+          font-weight: 700;
+          color: #92400e;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 4px;
+        }
+        .popup-highlight-value {
+          font-size: 16px;
+          font-weight: 700;
+          color: #b45309;
+        }
+        .popup-compare-btn {
+          width: 100%;
+          margin-top: 16px;
+          padding: 12px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          text-align: center;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .popup-compare-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        }
       "))
     ),
     
@@ -118,8 +215,17 @@ mapExplorerUI <- function(id) {
 
 # server ----
 mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range, 
-                              topics, demo_choices) {
+                              topics, demo_choices, on_compare_click) {
   moduleServer(id, function(input, output, session) {
+    
+    # Helper function to find predominant category
+    find_predominant <- function(values, labels) {
+      if (all(is.na(values)) || all(values == 0)) {
+        return(list(label = "N/A", value = 0))
+      }
+      max_idx <- which.max(values)
+      list(label = labels[max_idx], value = values[max_idx])
+    }
     
     # update choices on module initialization
     observe({
@@ -289,7 +395,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         })
       }
       
-      # create labels
+      # create hover labels
       labels <- lapply(1:n, function(i) {
         row_data <- map_data[i, ]
         label_text <- paste0("<b style='font-size: 14px;'>", str_to_title(row_data$community), "</b><br>")
@@ -321,6 +427,93 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         HTML(label_text)
       })
       
+      # create enhanced click popups with "Compare with Others" button
+      popups <- lapply(1:n, function(i) {
+        row_data <- map_data[i, ]
+        community_name <- row_data$community
+        
+        # Find predominant categories
+        race_values <- c(
+          row_data$white, 
+          row_data$black_or_african_american, 
+          row_data$asian, 
+          row_data$hispanic_or_latino,
+          row_data$other_race + row_data$multiracial + 
+            row_data$native_hawaiian_or_pacific_islander + 
+            row_data$american_indian_or_alaska_native
+        )
+        race_labels <- c("White", "Black/African American", "Asian", "Hispanic/Latino", "Other/Multiracial")
+        predominant_race <- find_predominant(race_values, race_labels)
+        
+        age_values <- c(
+          row_data$age_0_17,
+          row_data$age_18_24,
+          row_data$age_25_34,
+          row_data$age_35_49,
+          row_data$age_50_64,
+          row_data$age_65_plus
+        )
+        age_labels <- c("0-17 years", "18-24 years", "25-34 years", "35-49 years", "50-64 years", "65+ years")
+        predominant_age <- find_predominant(age_values, age_labels)
+        
+        income_values <- c(
+          row_data$under_25_000,
+          row_data$x25_000_to_49_999,
+          row_data$x50_000_to_74_999,
+          row_data$x75_000_to_125_000,
+          row_data$x125_000
+        )
+        income_labels <- c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+")
+        predominant_income <- find_predominant(income_values, income_labels)
+        
+        # Create unique button ID for this popup
+        btn_id <- paste0("compare_btn_", gsub("[^a-z0-9]", "_", tolower(community_name)))
+        
+        popup_html <- paste0(
+          "<div class='popup-header'>", str_to_title(community_name), "</div>",
+          "<div class='popup-body'>",
+          "<div class='popup-section'>",
+          "<div class='popup-section-title'>Coverage Metrics</div>",
+          "<div class='popup-stat-row'>",
+          "<span class='popup-stat-label'>Total Articles</span>",
+          "<span class='popup-stat-value'>", row_data$article_count, "</span></div>",
+          "<div class='popup-stat-row'>",
+          "<span class='popup-stat-label'>Per 1,000 People</span>",
+          "<span class='popup-stat-value'>", 
+          round((row_data$article_count / row_data$total_population) * 1000, 2), 
+          "</span></div>",
+          "</div>",
+          "<div class='popup-section'>",
+          "<div class='popup-section-title'>Demographics</div>",
+          "<div class='popup-stat-row'>",
+          "<span class='popup-stat-label'>Total Population</span>",
+          "<span class='popup-stat-value'>", format(row_data$total_population, big.mark = ","), "</span></div>",
+          "</div>",
+          "<div class='popup-highlight'>",
+          "<div class='popup-highlight-label'>Predominant Race</div>",
+          "<div class='popup-highlight-value'>", predominant_race$label, " (", 
+          format(predominant_race$value, big.mark = ","), ")</div>",
+          "</div>",
+          "<div class='popup-highlight'>",
+          "<div class='popup-highlight-label'>Predominant Age Group</div>",
+          "<div class='popup-highlight-value'>", predominant_age$label, " (", 
+          format(predominant_age$value, big.mark = ","), ")</div>",
+          "</div>",
+          "<div class='popup-highlight'>",
+          "<div class='popup-highlight-label'>Predominant Income</div>",
+          "<div class='popup-highlight-value'>", predominant_income$label, " (", 
+          format(predominant_income$value, big.mark = ","), ")</div>",
+          "</div>",
+          "<button class='popup-compare-btn' onclick='Shiny.setInputValue(\"map_tab-popup_compare_click\", \"", 
+          community_name, "\", {priority: \"event\"})'>",
+          "🔍 Compare with Others",
+          "</button>",
+          "</div>"
+        )
+        
+        HTML(popup_html)
+      })
+      
       leafletProxy("map", session, data = map_data) |>
         clearShapes() |>
         addPolygons(
@@ -330,6 +523,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           opacity = 0.8,
           fillOpacity = 0.75,
           label = labels,
+          popup = popups,
           labelOptions = labelOptions(
             direction = "auto", 
             textsize = "13px", 
@@ -348,6 +542,14 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
             bringToFront = TRUE
           )
         )
+    })
+    
+    # Handle popup compare button clicks
+    observeEvent(input$popup_compare_click, {
+      req(input$popup_compare_click)
+      if (!is.null(on_compare_click)) {
+        on_compare_click(input$popup_compare_click)
+      }
     })
     
     # date range text

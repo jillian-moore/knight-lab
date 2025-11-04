@@ -1,0 +1,41 @@
+NEIGHBORHOOD MAPPING METHODOLOGY
+=================================
+
+This analysis maps Block Club Chicago articles to Chicago's 77 official 
+community areas using a hierarchical matching system:
+
+1. PRIMARY MATCHING (Sub-community field):
+   - Extract the lead text before em-dash/hyphen in article content
+   - Match against neighborhood mapping table
+   - If match found, use ONLY this neighborhood
+
+2. SECONDARY MATCHING (Article Sections):
+   - If no primary match, parse parsely.meta.articleSection field
+   - Check each section against mapping table
+   - Collect ALL matching neighborhoods
+
+3. TERTIARY MATCHING (Primary Category):
+   - If still no match, parse slp_primary_category.name field
+   - Check each category against mapping table
+   - Collect ALL matching neighborhoods
+
+4. DEFAULT ASSIGNMENT:
+   - If no matches found, assign to 'chicago' (citywide)
+
+NEIGHBORHOOD MAPPING TABLE:
+- Maps sub-neighborhoods to official community areas
+- Examples:
+  * 'Wicker Park' → 'West Town'
+  * 'Bronzeville' → 'Grand Boulevard', 'Kenwood', 'Washington Park'
+  * 'Chinatown' → 'Armour Square'
+
+MULTI-NEIGHBORHOOD ARTICLES:
+- Articles can be assigned to multiple neighborhoods (up to 3)
+- This captures stories that span multiple communities
+- Each neighborhood assignment is stored in separate columns:
+  neighborhood1, neighborhood2, neighborhood3
+
+DATA QUALITY NOTES:
+- Total mapped neighborhoods: 78
+- Articles successfully mapped: 100%
+- Articles requiring manual review: 1

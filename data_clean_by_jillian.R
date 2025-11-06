@@ -452,7 +452,7 @@ article_data <- api_detail |>
   select(community, topic_match, article_date, year, month, year_month)
 
 # 3. create topics vector
-topics <- c(
+topic_choices <- c(
   "Arts & Culture", "Business", "Crime & Public Safety", "Education",
   "Food & Restaurants", "Health & Environment", "Housing", "Immigration",
   "Politics", "Social Movements", "Sports & Recreation", "Transportation & Infrastructure"
@@ -496,7 +496,7 @@ save(
   chi_boundaries_sf,
   article_data,
   date_range,
-  topics,
+  topic_choices,
   demo_choices,
   file = here("data/full_data.rda")
 )

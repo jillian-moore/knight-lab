@@ -21,9 +21,22 @@ source(here("modules/module2.R"))
 
 # UI ----
 ui <- navbarPage(
-  title = "Chicago Community Analytics Dashboard",
+  title = div(
+    style = "display: flex; align-items: center; gap: 10px;",
+    tags$img(src = "lnllogotransparent.png", height = "40px"),
+    "Chicago Community Analytics"
+  ),
   id = "main_navbar",
-  theme = bslib::bs_theme(version = 5, bootswatch = "flatly"),
+  windowTitle = "Chicago Community Analytics Dashboard",
+  theme = bslib::bs_theme(
+    version = 5,
+    bg = "#f1f3f2",
+    fg = "#333333",
+    primary = "#dd5600",
+    secondary = "#00bf7d",
+    base_font = bslib::font_google("Lato"),
+    heading_font = bslib::font_google("Crimson Text")
+  ),
   
   tabPanel(
     "Map Explorer",

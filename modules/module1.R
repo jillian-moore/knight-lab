@@ -7,63 +7,82 @@ mapExplorerUI <- function(id) {
   tagList(
     tags$head(
       tags$style(HTML("
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+        
         body { 
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          background: #f5f7fa;
+          font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: #f1f3f2;
+          color: #333333;
         }
         .title-panel { 
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #dd5600 0%, #c24c00 100%);
           color: white;
-          padding: 25px 30px;
-          border-radius: 10px;
+          padding: 20px 35px;
+          border-radius: 0;
           margin-bottom: 25px;
-          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 12px rgba(221, 86, 0, 0.25);
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
+        .title-logo {
+          height: 80px;
+          width: auto;
+        }
+        .title-text {
+          flex: 1;
         }
         .title-panel h2 { 
           margin: 0; 
-          font-weight: 300;
-          font-size: 28px;
-          letter-spacing: -0.5px;
+          font-family: 'Crimson Text', serif;
+          font-weight: 700;
+          font-size: 32px;
+          letter-spacing: 0;
         }
         .title-panel p { 
           margin: 8px 0 0 0; 
           opacity: 0.95; 
-          font-size: 15px; 
+          font-size: 15px;
+          font-weight: 400;
+          font-family: 'Lato', sans-serif;
         }
         .control-section {
           background: white;
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          padding: 22px;
+          border-radius: 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
           margin-bottom: 18px;
-          border: 1px solid #e8ebf0;
+          border: 1px solid #c9ccc8;
         }
         .control-section h4 {
           margin-top: 0;
-          color: #667eea;
-          font-size: 15px;
-          font-weight: 600;
-          border-bottom: 2px solid #f0f2f5;
+          color: #dd5600;
+          font-size: 14px;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          border-bottom: 2px solid #f1f3f2;
           padding-bottom: 10px;
           margin-bottom: 15px;
-          letter-spacing: 0.3px;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
         .mode-badge {
           display: inline-block;
-          padding: 5px 12px;
-          border-radius: 14px;
+          padding: 6px 14px;
+          border-radius: 3px;
           font-size: 11px;
           font-weight: 700;
           margin-left: 12px;
           letter-spacing: 0.5px;
+          font-family: 'Lato', sans-serif;
         }
         .real-mode { 
-          background: #d4edda; 
-          color: #155724;
-          border: 1px solid #c3e6cb;
+          background: #00bf7d; 
+          color: white;
+          border: none;
         }
         .leaflet-popup-content-wrapper {
-          border-radius: 16px;
+          border-radius: 0;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
           padding: 0;
           overflow: hidden;
@@ -72,14 +91,16 @@ mapExplorerUI <- function(id) {
         .leaflet-popup-content {
           margin: 0;
           width: auto !important;
+          font-family: 'Lato', sans-serif;
         }
         .popup-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #dd5600 0%, #c24c00 100%);
           color: white;
           padding: 20px 24px;
-          font-size: 20px;
+          font-size: 22px;
           font-weight: 700;
-          letter-spacing: -0.02em;
+          font-family: 'Crimson Text', serif;
+          letter-spacing: 0;
         }
         .popup-body {
           padding: 20px 24px;
@@ -94,78 +115,88 @@ mapExplorerUI <- function(id) {
         .popup-section-title {
           font-size: 11px;
           font-weight: 700;
-          color: #6b7280;
+          color: #666666;
           text-transform: uppercase;
           letter-spacing: 0.1em;
           margin-bottom: 12px;
           padding-bottom: 8px;
-          border-bottom: 2px solid #e5e7eb;
+          border-bottom: 2px solid #f1f3f2;
+          font-family: 'Lato', sans-serif;
         }
         .popup-stat-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
           padding: 10px 0;
-          border-bottom: 1px solid #f3f4f6;
+          border-bottom: 1px solid #f1f3f2;
         }
         .popup-stat-row:last-child {
           border-bottom: none;
         }
         .popup-stat-label {
           font-size: 13px;
-          font-weight: 500;
-          color: #374151;
+          font-weight: 400;
+          color: #666666;
+          font-family: 'Lato', sans-serif;
         }
         .popup-stat-value {
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 700;
-          color: #667eea;
+          color: #dd5600;
+          font-family: 'Lato', sans-serif;
         }
         .popup-highlight {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: #fff8e1;
           padding: 12px 16px;
-          border-radius: 8px;
+          border-radius: 0;
           margin-top: 12px;
-          border-left: 4px solid #f59e0b;
+          border-left: 4px solid #eec200;
         }
         .popup-highlight-label {
           font-size: 11px;
           font-weight: 700;
-          color: #92400e;
+          color: #666666;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-bottom: 4px;
+          font-family: 'Lato', sans-serif;
         }
         .popup-highlight-value {
           font-size: 16px;
           font-weight: 700;
-          color: #b45309;
+          color: #333333;
+          font-family: 'Crimson Text', serif;
         }
         .popup-compare-btn {
           width: 100%;
           margin-top: 16px;
           padding: 12px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: #dd5600;
           color: white;
           border: none;
-          border-radius: 8px;
-          font-weight: 600;
+          border-radius: 0;
+          font-weight: 700;
           font-size: 14px;
           cursor: pointer;
           text-align: center;
-          transition: transform 0.2s, box-shadow 0.2s;
+          transition: background 0.3s;
+          font-family: 'Lato', sans-serif;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         .popup-compare-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+          background: #c24c00;
         }
       "))
     ),
     
     div(class = "title-panel",
-        h2("Chicago Community Coverage Explorer",
-           span(class = "mode-badge real-mode", "LIVE DATA")),
-        p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
+        tags$img(src = "lnllogotransparent.png", class = "title-logo", alt = "Logo"),
+        div(class = "title-text",
+            h2("Chicago Community Coverage Explorer",
+               span(class = "mode-badge real-mode", "LIVE DATA")),
+            p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
+        )
     ),
     
     fluidRow(
@@ -205,7 +236,7 @@ mapExplorerUI <- function(id) {
       
       column(8,
              leafletOutput(ns("map"), height = "750px"),
-             tags$div(style = "text-align: center; margin-top: 15px; font-size: 13px; color: #6c757d;",
+             tags$div(style = "text-align: center; margin-top: 15px; font-size: 13px; color: #666666; font-weight: 400; font-family: 'Lato', sans-serif;",
                       textOutput(ns("date_range_text"))
              )
       )
@@ -322,7 +353,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       
       n <- nrow(map_data)
       
-      # blue intensity (articles)
+      # blue intensity (articles) - Using complementary cyan/blue
       blue_intensity <- rep(0, n)
       if (input$blue_var != "None") {
         max_val <- max(map_data$display_value, na.rm = TRUE)
@@ -332,7 +363,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         }
       }
       
-      # yellow intensity (demographics)
+      # yellow intensity (demographics) - Using tertiary yellow
       yellow_intensity <- rep(0, n)
       if (input$demo_var != "None" && input$demo_var %in% names(map_data)) {
         demo_vals <- suppressWarnings(as.numeric(map_data[[input$demo_var]]))
@@ -344,52 +375,57 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         }
       }
       
-      # determine colors
-      fill_colors <- rep("#E8E8E8", n)
+      # determine colors - Orange Line palette
+      fill_colors <- rep("#f1f3f2", n)  # color-tertiary-light for no data
       
       if (input$blue_var != "None" && (input$demo_var == "None")) {
-        # blue gradient only
+        # Blue gradient: complementary light to dark
         fill_colors <- sapply(1:n, function(i) {
           intensity <- blue_intensity[i]
-          if (intensity == 0) return("#E8E8E8")
-          r <- round(179 + (0 - 179) * intensity)
-          g <- round(217 + (51 - 217) * intensity)
-          b <- round(255 + (160 - 255) * intensity)
+          if (intensity == 0) return("#f1f3f2")
+          # From light cyan to dark teal (complementary to orange)
+          r <- round(173 + (0 - 173) * intensity)
+          g <- round(216 + (121 - 216) * intensity)
+          b <- round(230 + (147 - 230) * intensity)
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var == "None" && input$demo_var != "None") {
-        # yellow gradient only
+        # Yellow gradient: tertiary light to dark
         fill_colors <- sapply(1:n, function(i) {
           intensity <- yellow_intensity[i]
-          if (intensity == 0) return("#E8E8E8")
-          r <- round(255 + (204 - 255) * intensity)
-          g <- round(244 + (102 - 244) * intensity)
-          b <- round(204 + (0 - 204) * intensity)
+          if (intensity == 0) return("#f1f3f2")
+          # From #f1ece4 to #eec200 (tertiary colors)
+          r <- round(241 + (238 - 241) * intensity)
+          g <- round(236 + (194 - 236) * intensity)
+          b <- round(228 + (0 - 228) * intensity)
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var != "None" && input$demo_var != "None") {
-        # green blend
+        # Green blend when both selected (secondary color)
         fill_colors <- sapply(1:n, function(i) {
           blue_val <- blue_intensity[i]
           yellow_val <- yellow_intensity[i]
-          if(blue_val == 0 && yellow_val == 0) return("#E8E8E8")
+          if(blue_val == 0 && yellow_val == 0) return("#f1f3f2")
           
           avg_intensity <- (blue_val + yellow_val) / 2
           total <- blue_val + yellow_val
           blue_weight <- blue_val / total
           
           if(blue_weight > 0.6) {
-            r <- round(102 + (0 - 102) * avg_intensity)
-            g <- round(204 + (128 - 204) * avg_intensity)
-            b <- round(204 + (128 - 204) * avg_intensity)
+            # More blue - cyan tones
+            r <- round(173 + (0 - 173) * avg_intensity)
+            g <- round(216 + (150 - 216) * avg_intensity)
+            b <- round(230 + (136 - 230) * avg_intensity)
           } else if(blue_weight < 0.4) {
-            r <- round(204 + (128 - 204) * avg_intensity)
-            g <- round(255 + (160 - 255) * avg_intensity)
-            b <- round(102 + (64 - 102) * avg_intensity)
+            # More yellow - warm green
+            r <- round(200 + (139 - 200) * avg_intensity)
+            g <- round(220 + (195 - 220) * avg_intensity)
+            b <- round(150 + (74 - 150) * avg_intensity)
           } else {
-            r <- round(144 + (34 - 144) * avg_intensity)
-            g <- round(238 + (139 - 238) * avg_intensity)
-            b <- round(144 + (34 - 144) * avg_intensity)
+            # Balanced - secondary green (#00bf7d)
+            r <- round(180 + (0 - 180) * avg_intensity)
+            g <- round(220 + (191 - 220) * avg_intensity)
+            b <- round(200 + (125 - 200) * avg_intensity)
           }
           rgb(r, g, b, maxColorValue = 255)
         })
@@ -398,18 +434,19 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       # create hover labels
       labels <- lapply(1:n, function(i) {
         row_data <- map_data[i, ]
-        label_text <- paste0("<b style='font-size: 14px;'>", str_to_title(row_data$community), "</b><br>")
+        label_text <- paste0("<b style='font-size: 15px; font-family: \"Crimson Text\", serif;'>", 
+                             str_to_title(row_data$community), "</b><br>")
         
         if (input$metric_type == "per_capita") {
           label_text <- paste0(
             label_text,
-            "<span style='color: #667eea;'>📰 Articles per 1,000: </span>", 
+            "<span style='color: #dd5600; font-family: \"Lato\", sans-serif;'>📰 Articles per 1,000: </span>", 
             "<b>", round(row_data$display_value, 2), "</b><br>"
           )
         } else {
           label_text <- paste0(
             label_text,
-            "<span style='color: #667eea;'>📰 Total Articles: </span>", 
+            "<span style='color: #dd5600; font-family: \"Lato\", sans-serif;'>📰 Total Articles: </span>", 
             "<b>", row_data$article_count, "</b><br>"
           )
           
@@ -418,7 +455,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
             demo_name <- names(demo_choices)[demo_choices == input$demo_var]
             label_text <- paste0(
               label_text,
-              "<span style='color: #f39c12;'>📊 ", demo_name, ": </span>",
+              "<span style='color: #eec200; font-family: \"Lato\", sans-serif;'>📊 ", demo_name, ": </span>",
               "<b>", format(replace_na(demo_value, 0), big.mark = ","), "</b>"
             )
           }
@@ -465,9 +502,6 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         )
         income_labels <- c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+")
         predominant_income <- find_predominant(income_values, income_labels)
-        
-        # Create unique button ID for this popup
-        btn_id <- paste0("compare_btn_", gsub("[^a-z0-9]", "_", tolower(community_name)))
         
         popup_html <- paste0(
           "<div class='popup-header'>", str_to_title(community_name), "</div>",
@@ -518,7 +552,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         clearShapes() |>
         addPolygons(
           fillColor = fill_colors,
-          color = "#666",
+          color = "#666666",
           weight = 1.2,
           opacity = 0.8,
           fillOpacity = 0.75,
@@ -530,13 +564,14 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
             sticky = TRUE,
             style = list(
               "padding" = "8px 12px",
-              "border-radius" = "6px",
-              "box-shadow" = "0 3px 10px rgba(0,0,0,0.2)"
+              "border-radius" = "0",
+              "box-shadow" = "0 3px 10px rgba(0,0,0,0.2)",
+              "font-family" = "'Lato', sans-serif"
             )
           ),
           highlightOptions = highlightOptions(
             weight = 2.5,
-            color = "#000",
+            color = "#333333",
             opacity = 1,
             fillOpacity = 0.85,
             bringToFront = TRUE

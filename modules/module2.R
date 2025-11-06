@@ -7,54 +7,81 @@ communityComparisonUI <- function(id) {
   tagList(
     tags$head(
       tags$style(HTML("
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+        
         .title-panel { 
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #dd5600 0%, #c24c00 100%);
           color: white;
-          padding: 20px;
-          border-radius: 8px;
+          padding: 20px 25px;
+          border-radius: 0;
           margin-bottom: 20px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 12px rgba(221, 86, 0, 0.25);
+          display: flex;
+          align-items: center;
+          gap: 20px;
         }
-        .title-panel h2 { margin: 0; font-weight: 300; }
-        .title-panel p { margin: 5px 0 0 0; opacity: 0.9; font-size: 14px; }
+        .title-logo {
+          height: 70px;
+          width: auto;
+        }
+        .title-text {
+          flex: 1;
+        }
+        .title-panel h2 { 
+          margin: 0; 
+          font-family: 'Crimson Text', serif;
+          font-weight: 700; 
+          font-size: 28px;
+        }
+        .title-panel p { 
+          margin: 6px 0 0 0; 
+          opacity: 0.95; 
+          font-size: 14px; 
+          font-weight: 400;
+          font-family: 'Lato', sans-serif;
+        }
         .control-section {
           background: white;
           padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          border-radius: 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
           margin-bottom: 15px;
+          border: 1px solid #c9ccc8;
         }
         .control-section h3 {
           margin-top: 0;
-          color: #667eea;
+          color: #dd5600;
           font-size: 18px;
-          font-weight: 600;
-          border-bottom: 2px solid #f0f0f0;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          border-bottom: 2px solid #f1f3f2;
           padding-bottom: 8px;
         }
         .control-section h4 {
           margin-top: 0;
-          color: #667eea;
+          color: #dd5600;
           font-size: 16px;
-          font-weight: 600;
-          border-bottom: 2px solid #f0f0f0;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          border-bottom: 2px solid #f1f3f2;
           padding-bottom: 8px;
           margin-bottom: 15px;
         }
         .community-selector-card {
           background: white;
-          border-radius: 10px;
+          border-radius: 0;
           padding: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-          border: 1px solid #e8ebf0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          border: 1px solid #c9ccc8;
         }
         .community-selector-header {
-          font-size: 14px;
-          font-weight: 600;
-          color: #667eea;
+          font-size: 13px;
+          font-weight: 700;
+          color: #dd5600;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-bottom: 12px;
+          font-family: 'Lato', sans-serif;
         }
         .stat-item {
           display: flex;
@@ -62,51 +89,64 @@ communityComparisonUI <- function(id) {
           align-items: center;
           padding: 12px 16px;
           margin-bottom: 10px;
-          background: #f8f9fa;
-          border-radius: 6px;
-          border-left: 4px solid #667eea;
+          background: #f1f3f2;
+          border-radius: 0;
+          border-left: 4px solid #dd5600;
         }
         .stat-item-label {
           font-size: 12px;
-          font-weight: 600;
-          color: #6b7280;
+          font-weight: 700;
+          color: #666666;
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          font-family: 'Lato', sans-serif;
         }
         .stat-item-value {
-          font-size: 17px;
+          font-size: 18px;
           font-weight: 700;
-          color: #24292e;
+          color: #333333;
+          font-family: 'Crimson Text', serif;
         }
         .predominant-box {
-          background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+          background: #fff8e1;
           padding: 12px 16px;
-          border-radius: 6px;
+          border-radius: 0;
           margin-bottom: 10px;
-          border-left: 4px solid #f59e0b;
+          border-left: 4px solid #eec200;
         }
         .predominant-title {
           font-size: 10px;
           font-weight: 700;
-          color: #92400e;
+          color: #666666;
           text-transform: uppercase;
           letter-spacing: 0.05em;
           margin-bottom: 5px;
+          font-family: 'Lato', sans-serif;
         }
         .predominant-value {
-          font-size: 14px;
+          font-size: 15px;
           font-weight: 700;
-          color: #b45309;
+          color: #333333;
+          font-family: 'Crimson Text', serif;
         }
         .demographic-selector {
           margin-bottom: 15px;
+        }
+        .demographic-selector label {
+          font-family: 'Lato', sans-serif;
+          font-weight: 400;
+          color:
+          #666666;
         }
       "))
     ),
     
     div(class = "title-panel",
-        h2("Chicago Community Area Comparison"),
-        p("Compare news coverage and demographics between two Chicago neighborhoods")
+        tags$img(src = "lnllogotransparent.png", class = "title-logo", alt = "Logo"),
+        div(class = "title-text",
+            h2("Chicago Community Area Comparison"),
+            p("Compare news coverage and demographics between two Chicago neighborhoods")
+        )
     ),
     
     # Community selectors with stat cards
@@ -193,8 +233,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
                         choices = community_choices,
                         selected = ward1_default)
       updateSelectInput(session, "ward2", 
-                        choices = community_choices
-                        ,
+                        choices = community_choices,
                         selected = community_choices[min(2, length(community_choices))])
     })
     
@@ -407,20 +446,26 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       
       ggplot(line_data(), aes(x = year_month, y = articles_per_1000, 
                               color = community_label, group = community_label)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 2) +
-        scale_color_manual(values = c("#667eea", "#f093fb")) +
+        geom_line(size = 1.5) +
+        geom_point(size = 2.5) +
+        scale_color_manual(values = c("#dd5600", "#00bf7d")) +
         scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
         labs(
           x = NULL,
           y = "Articles per 1,000 People",
           color = "Community Area"
         ) +
-        theme_minimal(base_size = 12) +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16),
           legend.position = "top",
-          axis.text.x = element_text(angle = 45, hjust = 1),
-          panel.grid.minor = element_blank()
+          legend.text = element_text(size = 12),
+          axis.text.x = element_text(angle = 45, hjust = 1, color = "#666666"),
+          axis.text.y = element_text(color = "#666666"),
+          axis.title.y = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
@@ -483,15 +528,6 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       
       pyr_data <- pyramid_data()
       
-      # Create directional values for pyramid (left = negative, right = positive)
-      pyr_data <- pyr_data %>%
-        group_by(community) %>%
-        mutate(
-          direction = ifelse(row_number() <= n()/2 | community == first(community), -1, 1),
-          plot_value = value * direction
-        ) %>%
-        ungroup()
-      
       # Get the two community names in order
       communities <- unique(pyr_data$community)
       
@@ -506,7 +542,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       
       ggplot(pyr_data, aes(x = plot_value, y = category, fill = community)) +
         geom_bar(stat = "identity") +
-        scale_fill_manual(values = c("#667eea", "#f093fb")) +
+        scale_fill_manual(values = c("#dd5600", "#00bf7d")) +
         scale_x_continuous(
           labels = function(x) format(abs(x), big.mark = ","),
           limits = c(-max_val * 1.1, max_val * 1.1)
@@ -516,14 +552,19 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
           y = NULL,
           fill = "Community"
         ) +
-        theme_minimal(base_size = 12) +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
+          text = element_text(family = "sans", color = "#333333"),
           legend.position = "top",
+          legend.text = element_text(size = 12),
           panel.grid.major.y = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.text.y = element_text(size = 11, face = "bold")
+          panel.grid.major.x = element_line(color = "#f1f3f2"),
+          axis.text.y = element_text(size = 12, face = "bold", color = "#333333"),
+          axis.text.x = element_text(color = "#666666"),
+          axis.title.x = element_text(color = "#333333", face = "bold")
         ) +
-        geom_vline(xintercept = 0, color = "gray30", size = 0.5)
+        geom_vline(xintercept = 0, color = "#666666", size = 0.5)
     }) %>% bindCache(input$ward1, input$ward2, input$pyramid_type)
     
     # stacked bar data
@@ -542,17 +583,24 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       ggplot(bar_data(), aes(x = factor(year), y = total, fill = random_topic)) +
         geom_bar(stat = "identity", position = "stack") +
         facet_wrap(~ community_label, ncol = 2) +
-        scale_fill_brewer(palette = "Set3") +
+        scale_fill_manual(values = c("#dd5600", "#00bf7d", "#eec200", "#5a3825", 
+                                     "#6633cc", "#c9ccc8", "#666666", "#333333",
+                                     "#f1ece4", "#ada8a0", "#ff8800", "#2196f3")) +
         labs(
           x = "Year",
           y = "Number of Articles",
           fill = "Topic"
         ) +
-        theme_minimal(base_size = 12) +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
+          text = element_text(family = "sans", color = "#333333"),
           legend.position = "bottom",
-          strip.text = element_text(size = 13, face = "bold"),
-          panel.grid.minor = element_blank()
+          legend.text = element_text(size = 11),
+          strip.text = element_text(size = 14, face = "bold", family = "serif", color = "#dd5600"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2"),
+          axis.text = element_text(color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold")
         ) +
         guides(fill = guide_legend(nrow = 2))
     }) %>% bindCache(input$ward1, input$ward2)

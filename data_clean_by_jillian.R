@@ -1,8 +1,10 @@
 # CLEANING THE DATA ----
+
 # packages ----
 library(tidyverse)
 library(here)
 library(conflicted)
+library(sf)
 
 # conflicts ----
 conflicts_prefer(dplyr::filter)
@@ -427,5 +429,74 @@ full_data <- full_data |>
                                      0)
   )
 
+# prepare data for shiny app ----
+
+# create chi_boundaries_sf (spatial data with census info)
+chi_boundaries_sf <- chi_boundaries_clean |> 
+  st_as_sf(wkt = "the_geom", crs = 4326) |> 
+  select(community, total_population, white, black_or_african_american, 
+         american_indian_or_alaska_native, asian, native_hawaiian_or_pacific_islander,
+         other_race, multiracial, hispanic_or_latino,
+         under_25_000, x25_000_to_49_999, x50_000_to_74_999, 
+         x75_000_to_125_000, x125_000,
+         age_0_17, age_18_24, age_25_34, age_35_49, age_50_64, age_65_plus,
+         the_geom) |> 
+  distinct(community, .keep_all = TRUE)
+
+# create article_data (long format with one row per article-community)
+article_data <- api_detail |> 
+  rename(
+    article_date = date,
+    topic_match = random_topic
+  ) |> 
+  select(community, topic_match, article_date, year, month, year_month)
+
+# 3. create topics vector
+topics <- c(
+  "Arts & Culture", "Business", "Crime & Public Safety", "Education",
+  "Food & Restaurants", "Health & Environment", "Housing", "Immigration",
+  "Politics", "Social Movements", "Sports & Recreation", "Transportation & Infrastructure"
+)
+
+# name demographic vars
+demo_choices <- c(
+  "None" = "None",
+  "Total Population" = "total_population",
+  "White" = "white",
+  "Black/African American" = "black_or_african_american",
+  "Asian" = "asian",
+  "Native American" = "american_indian_or_alaska_native",
+  "Pacific Islander" = "native_hawaiian_or_pacific_islander",
+  "Other Race" = "other_race",
+  "Multiracial" = "multiracial",
+  "Hispanic/Latino" = "hispanic_or_latino",
+  "Income: Under $25k" = "under_25_000",
+  "Income: $25k-$50k" = "x25_000_to_49_999",
+  "Income: $50k-$75k" = "x50_000_to_74_999",
+  "Income: $75k-$125k" = "x75_000_to_125_000",
+  "Income: Over $125k" = "x125_000",
+  "Age: 0-17" = "age_0_17",
+  "Age: 18-24" = "age_18_24",
+  "Age: 25-34" = "age_25_34",
+  "Age: 35-49" = "age_35_49",
+  "Age: 50-64" = "age_50_64",
+  "Age: 65+" = "age_65_plus"
+)
+
+# get date range
+date_range <- api_detail |> 
+  summarise(
+    min_date = min(date, na.rm = TRUE),
+    max_date = max(date, na.rm = TRUE)
+  )
+
 # save out ----
-save(full_data, file = here("data/full_data.rda"))
+save(
+  full_data,
+  chi_boundaries_sf,
+  article_data,
+  date_range,
+  topics,
+  demo_choices,
+  file = here("data/full_data.rda")
+)

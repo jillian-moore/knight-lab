@@ -11,7 +11,6 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(lubridate)
-
 # source data clean ----
 load(here("data/full_data.rda"))
 
@@ -23,7 +22,7 @@ source(here("modules/module2.R"))
 ui <- navbarPage(
   title = div(
     style = "display: flex; align-items: center; gap: 10px;",
-    tags$img(src = "lnllogotransparent.png", height = "40px"),
+    tags$img(src = "lnllogotransparent", height = "40px"),
     "Chicago Community Analytics"
   ),
   id = "main_navbar",

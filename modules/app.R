@@ -23,6 +23,18 @@ load(here("data/full_data.rda"))
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
 
+# URL to raw CSV in your GitHub repo branch
+data_url <- "https://raw.githubusercontent.com/jillian-moore/knight-lab/data-update/data/latest_data.csv"
+
+# Load data safely, with fallback to local file
+full_data <- tryCatch(
+  read_csv(data_url),
+  error = function(e) {
+    message("GitHub CSV unavailable, loading local backup")
+    read_csv(here("data/full_data.csv")) # optional backup
+  }
+)
+
 # UI ----
 ui <- fluidPage(
   

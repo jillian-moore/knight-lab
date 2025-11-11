@@ -92,22 +92,24 @@ get_new_posts <- function(base_url, existing_posts, per_page = 100, max_pages = 
     post_ids <- as.numeric(posts$id)
     new_mask <- post_ids > latest_id
     
-    if(any(!new_mask)) {
-      # we've hit posts we already have
-      found_existing <- TRUE
-      if(any(new_mask)) {
-        # keep only the new ones from this page
-        posts <- posts[new_mask, ]
-        new_posts[[page]] <- posts
-        cat("Page", page, "- found", sum(new_mask), "new posts, reached existing content\n")
-      } else {
-        cat("Page", page, "- all posts already exist, stopping\n")
-      }
+    if(any(new_mask)) {
+      # keep only the new ones from this page
+      posts <- posts[new_mask, ]
+      new_posts[[page]] <- posts
+      cat("Page", page, "- found", sum(new_mask), "new posts\n")
+    }
+    
+    # Stop only if ALL posts on this page already exist
+    if(all(!new_mask)) {
+      cat("Page", page, "- all posts already exist, stopping\n")
       break
     }
     
-    new_posts[[page]] <- posts
-    cat("Fetched page", page, "with", nrow(posts), "NEW posts\n")
+    # Also stop if we got fewer than per_page posts (reached the end)
+    if(length(post_ids) < per_page && all(!new_mask)) {
+      cat("Reached end of available posts\n")
+      break
+    }
   }
   
   if(length(new_posts) > 0) {

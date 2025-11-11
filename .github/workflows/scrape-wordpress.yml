@@ -20,5 +20,5 @@ jobs:
         run: Rscript -e "install.packages('rvest')"
 
       - name: Run scraper
-        run: Rscript scripts/scrape-wordpress.R
+        run: Rscript new_scraper.R
 

@@ -22,3 +22,4 @@ data/*.rda
 .Renviron
 .env
 >>>>>>> 35df864 (Reinitialize project and restore files)
+.DS_Store

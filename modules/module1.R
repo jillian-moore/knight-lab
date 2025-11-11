@@ -191,7 +191,7 @@ mapExplorerUI <- function(id) {
     ),
     
     div(class = "title-panel",
-        tags$img(src = "lnllogotransparent.png", class = "title-logo", alt = "Logo"),
+        tags$img(src = "lnllogotransparent", class = "title-logo", alt = "Logo"),
         div(class = "title-text",
             h2("Chicago Community Coverage Explorer",
                span(class = "mode-badge real-mode", "LIVE DATA")),

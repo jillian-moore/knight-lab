@@ -11,6 +11,9 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(lubridate)
+
+logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
+
 # source data clean ----
 load(here("data/full_data.rda"))
 
@@ -22,8 +25,15 @@ source(here("modules/module2.R"))
 ui <- navbarPage(
   title = div(
     style = "display: flex; align-items: center; gap: 10px;",
-    tags$img(src = "lnllogotransparent", height = "40px"),
-    "Chicago Community Analytics"
+    tags$img(
+      src = "lnllogowhiterectangle.jpeg",
+      height = "20px",
+      style = "border-radius: 4px;"
+    ),
+    tags$span(
+      "Chicago Community Analytics",
+      style = "font-weight: 700; font-family: 'Crimson Text', serif; font-size: 18px;"
+    )
   ),
   id = "main_navbar",
   windowTitle = "Chicago Community Analytics Dashboard",
@@ -37,18 +47,34 @@ ui <- navbarPage(
     heading_font = bslib::font_google("Crimson Text")
   ),
   
-  tabPanel(
-    "Map Explorer",
-    icon = icon("map"),
-    value = "map_tab",
-    mapExplorerUI("map_tab")
+  # Add custom CSS to ensure images load
+  tags$head(
+    tags$style(HTML("
+      .navbar-brand img {
+        display: inline-block;
+        vertical-align: middle;
+      }
+    "))
   ),
   
-  tabPanel(
-    "Community Comparison",
-    icon = icon("chart-line"),
-    value = "comparison_tab",
-    communityComparisonUI("comparison_tab")
+  # Dropdown menu for visualizations
+  navbarMenu(
+    "Tabs",
+    icon = icon("chart-bar"),
+    
+    tabPanel(
+      "Map Visualization",
+      icon = icon("map"),
+      value = "map_tab",
+      mapExplorerUI("map_tab")
+    ),
+    
+    tabPanel(
+      "Ward Comparison",
+      icon = icon("chart-line"),
+      value = "comparison_tab",
+      communityComparisonUI("comparison_tab")
+    )
   )
 )
 

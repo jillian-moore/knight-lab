@@ -1,14 +1,15 @@
 # WARD COMPARISON - MODULE 2
 
+logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
+
 # UI ----
 communityComparisonUI <- function(id) {
   ns <- NS(id)
   
   tagList(
+    # CSS and logo
     tags$head(
       tags$style(HTML("
-        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
-        
         .title-panel { 
           background: linear-gradient(135deg, #dd5600 0%, #c24c00 100%);
           color: white;
@@ -19,10 +20,6 @@ communityComparisonUI <- function(id) {
           display: flex;
           align-items: center;
           gap: 20px;
-        }
-        .title-logo {
-          height: 70px;
-          width: auto;
         }
         .title-text {
           flex: 1;
@@ -48,23 +45,19 @@ communityComparisonUI <- function(id) {
           margin-bottom: 15px;
           border: 1px solid #c9ccc8;
         }
-        .control-section h3 {
+        .control-section h3, .control-section h4 {
           margin-top: 0;
           color: #dd5600;
-          font-size: 18px;
           font-weight: 700;
           font-family: 'Lato', sans-serif;
           border-bottom: 2px solid #f1f3f2;
           padding-bottom: 8px;
         }
+        .control-section h3 {
+          font-size: 18px;
+        }
         .control-section h4 {
-          margin-top: 0;
-          color: #dd5600;
           font-size: 16px;
-          font-weight: 700;
-          font-family: 'Lato', sans-serif;
-          border-bottom: 2px solid #f1f3f2;
-          padding-bottom: 8px;
           margin-bottom: 15px;
         }
         .community-selector-card {
@@ -135,25 +128,24 @@ communityComparisonUI <- function(id) {
         .demographic-selector label {
           font-family: 'Lato', sans-serif;
           font-weight: 400;
-          color:
-          #666666;
+          color: #666666;
         }
       "))
     ),
     
+    # Title panel with correct logo
     div(class = "title-panel",
-        tags$img(src = "lnllogotransparent", class = "title-logo", alt = "Logo"),
         div(class = "title-text",
             h2("Chicago Community Area Comparison"),
             p("Compare news coverage and demographics between two Chicago neighborhoods")
         )
     ),
     
-    # Community selectors with stat cards
+    # Community selectors
     fluidRow(
       column(6,
              div(class = "community-selector-card",
-                 div(class = "community-selector-header", "📍 First Community Area"),
+                 div(class = "community-selector-header", "First Community Area"),
                  selectInput(ns("ward1"), NULL,
                              choices = NULL,
                              selected = NULL),
@@ -162,7 +154,7 @@ communityComparisonUI <- function(id) {
       ),
       column(6,
              div(class = "community-selector-card",
-                 div(class = "community-selector-header", "📍 Second Community Area"),
+                 div(class = "community-selector-header", "Second Community Area"),
                  selectInput(ns("ward2"), NULL,
                              choices = NULL,
                              selected = NULL),
@@ -171,7 +163,7 @@ communityComparisonUI <- function(id) {
       )
     ),
     
-    # Charts section
+    # Charts
     fluidRow(
       column(6,
              div(class = "control-section",
@@ -193,6 +185,7 @@ communityComparisonUI <- function(id) {
       )
     ),
     
+    # Topics bar chart
     fluidRow(
       column(12,
              div(class = "control-section",
@@ -204,11 +197,11 @@ communityComparisonUI <- function(id) {
   )
 }
 
-# server ----
+# SERVER ----
 communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
     
-    # Helper function to find predominant category
+    # Helper to find predominant category
     find_predominant <- function(values, labels) {
       if (all(is.na(values)) || all(values == 0)) {
         return(list(label = "N/A", value = 0))
@@ -217,12 +210,11 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       list(label = labels[max_idx], value = values[max_idx])
     }
     
-    # initialize community choices
+    # Initialize community options
     observe({
       community_choices <- sort(unique(full_data$community))
-      names(community_choices) <- str_to_title(community_choices)
+      names(community_choices) <- stringr::str_to_title(community_choices)
       
-      # Check if ward1 is pre-selected from map click
       ward1_default <- if (!is.null(selected_ward1()) && selected_ward1() != "") {
         selected_ward1()
       } else {
@@ -237,16 +229,16 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
                         selected = community_choices[min(2, length(community_choices))])
     })
     
-    # reactive data for selected wards
+    # Reactive ward data
     ward_data <- reactive({
       req(input$ward1, input$ward2)
       
       full_data %>%
         filter(community %in% c(input$ward1, input$ward2)) %>%
         mutate(
-          community_label = str_to_title(community),
-          year = year(date),
-          year_month = floor_date(date, "month")
+          community_label = stringr::str_to_title(community),
+          year = lubridate::year(date),
+          year_month = lubridate::floor_date(date, "month")
         )
     }) %>% bindCache(input$ward1, input$ward2)
     

@@ -1,14 +1,15 @@
 # DATA VIZ - MODULE 1
 
+logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
+
 # UI ----
 mapExplorerUI <- function(id) {
   ns <- NS(id)
   
   tagList(
     tags$head(
+      tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Crimson+Text:wght@700&display=swap"),
       tags$style(HTML("
-        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
-        
         body { 
           font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           background: #f1f3f2;
@@ -24,10 +25,6 @@ mapExplorerUI <- function(id) {
           display: flex;
           align-items: center;
           gap: 20px;
-        }
-        .title-logo {
-          height: 80px;
-          width: auto;
         }
         .title-text {
           flex: 1;
@@ -190,33 +187,33 @@ mapExplorerUI <- function(id) {
       "))
     ),
     
+    # Title panel with logo
     div(class = "title-panel",
-        tags$img(src = "lnllogotransparent", class = "title-logo", alt = "Logo"),
+        tags$img(src = sprintf("data:image/jpeg;base64,%s", logo_base64)),
         div(class = "title-text",
-            h2("Chicago Community Coverage Explorer",
-               span(class = "mode-badge real-mode", "LIVE DATA")),
-            p("Visualizing Block Club Chicago article topics and census demographics across 77 neighborhoods")
+            h2("Chicago Community Map Explorer"),
+            p("Explore news coverage patterns across Chicago neighborhoods")
         )
     ),
     
     fluidRow(
       column(4,
              div(class = "control-section",
-                 h4("📰 Topic Selection"),
+                 h4("Topic Selection"),
                  selectInput(ns("blue_var"), NULL,
                              choices = NULL, 
                              selected = "None")
              ),
              
              div(class = "control-section",
-                 h4("📊 Demographics"),
+                 h4("Demographics"),
                  selectInput(ns("demo_var"), NULL,
                              choices = NULL, 
                              selected = "None")
              ),
              
              div(class = "control-section",
-                 h4("📏 Metric Type"),
+                 h4("Metric Type"),
                  radioButtons(ns("metric_type"), NULL,
                               choices = c("Total Articles" = "total",
                                           "Articles per 1,000 People" = "per_capita"),
@@ -224,7 +221,7 @@ mapExplorerUI <- function(id) {
              ),
              
              div(class = "control-section",
-                 h4("📅 Time Period"),
+                 h4("Time Period"),
                  sliderInput(ns("date_range_slider"), NULL,
                              min = as.Date("2020-01-01"),
                              max = Sys.Date(),

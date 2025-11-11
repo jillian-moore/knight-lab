@@ -1,25 +1,101 @@
-
 name: Scrape WordPress
 
+# Trigger workflow manually or on a schedule
 on:
-  workflow_dispatch:
+  workflow_dispatch:       # Allows manual runs from GitHub Actions tab
   schedule:
-    - cron: '0 9 * * 0'  # 9 AM UTC = 3 AM CST (4 AM CDT)
+    - cron: '0 9 * * 0'    # Runs every Sunday at 9 AM UTC (3 AM CST / 4 AM CDT)
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
+
     steps:
-  
+
+      # 1️⃣ Checkout repository code
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # 2️⃣ Set up R environment
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
+      # 3️⃣ Install required R packages
       - name: Install R packages
-        run: Rscript -e "install.packages(c('httr','rvest','dplyr'))"
+        run: |
+          Rscript -e "install.packages(
+            c('httr','rvest','dplyr','tidyr','lubridate','jsonlite','readr'),
+            repos='https://cloud.r-project.org'
+          )"
 
+      # 4️⃣ Verify package installation
+      - name: Verify packages
+        run: |
+          Rscript -e "
+          library(httr)
+          library(rvest)
+          library(dplyr)
+          message('Packages loaded successfully')
+          "
+
+      # 5️⃣ Run the web scraper
       - name: Run scraper
-        run: Rscript new_scraper.R
+        run: |
+          Rscript -e "
+          tryCatch(
+            source('new_scraper.R'),
+            error=function(e) {
+              message('Scraper error: ', e$message)
+              stop(e)
+            }
+          )
+          "
 
+      # 6️⃣ Clean the scraped data
+      - name: Clean data
+        run: |
+          Rscript -e "
+          tryCatch(
+            source('data_clean_by_jillian.R'),
+            error=function(e) {
+              message('Data cleaning error: ', e$message)
+              stop(e)
+            }
+          )
+          "
+
+      # 7️⃣ (Optional) AI processing step
+      # Uncomment if you have AI processing
+      # - name: AI processing
+      #   run: |
+      #     Rscript -e "
+      #     tryCatch(
+      #       source('ai_process.R'),
+      #       error=function(e) {
+      #         message('AI processing error: ', e$message)
+      #         stop(e)
+      #       }
+      #     )
+      #     "
+
+      # 8️⃣ Commit and push updated data to a separate branch
+      - name: Commit updated data
+        run: |
+          # Configure Git user
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Switch to or create branch 'data-update'
+          git checkout -B data-update
+
+          # Stage all changes in the data folder
+          git add data/
+
+          # Only commit if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update processed data [skip ci]"
+            # Push branch to remote
+            git push origin data-update --force
+          fi

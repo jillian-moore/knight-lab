@@ -11,6 +11,8 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 library(lubridate)
+library(bslib)
+library(fontawesome)
 
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
@@ -34,58 +36,59 @@ source(here("modules/module2.R"))
 # )
 
 # UI ----
-ui <- navbarPage(
-  title = div(
-    style = "display: flex; align-items: center; gap: 10px;",
-    tags$img(
-      src = "lnllogowhiterectangle.jpeg",
-      height = "20px",
-      style = "border-radius: 4px;"
-    ),
-    tags$span(
-      "Chicago Community Analytics",
-      style = "font-weight: 700; font-family: 'Crimson Text', serif; font-size: 18px;"
-    )
-  ),
-  id = "main_navbar",
-  windowTitle = "Chicago Community Analytics Dashboard",
-  theme = bslib::bs_theme(
-    version = 5,
-    bg = "#f1f3f2",
-    fg = "#333333",
-    primary = "#dd5600",
-    secondary = "#00bf7d",
-    base_font = bslib::font_google("Lato"),
-    heading_font = bslib::font_google("Crimson Text")
+ui <- fluidPage(
+  
+  
+  # MAIN TITLE BELOW LOGO
+  div(
+    style = "text-align: center; margin-top: 75px; margin-bottom: 15px;",
+    h1("Chicago Community Analytics", style = "font-family: 'Crimson Text', serif; font-weight: 700; font-size: 72px; color: #dd5600;"),
+    h4("Explore Chicago neighborhoods news coverage and demographics", style = "font-family: 'Lato', sans-serif; font-weight: 400; color: #333333;")
   ),
   
-  # Add custom CSS to ensure images load
-  tags$head(
-    tags$style(HTML("
-      .navbar-brand img {
-        display: inline-block;
-        vertical-align: middle;
-      }
-    "))
-  ),
-  
-  # Dropdown menu for visualizations
-  navbarMenu(
-    "Tabs",
-    icon = icon("chart-bar"),
-    
-    tabPanel(
-      "Map Visualization",
-      icon = icon("map"),
-      value = "map_tab",
-      mapExplorerUI("map_tab")
+  # NAVBAR WITH TABS
+  navbarPage(
+    title = NULL,   # remove inline title
+    id = "main_navbar",
+    windowTitle = "Chicago Community Analytics Dashboard",
+    theme = bslib::bs_theme(
+      version = 5,
+      bg = "#f1f3f2",
+      fg = "#333333",
+      primary = "#dd5600",
+      secondary = "#00bf7d",
+      base_font = bslib::font_google("Lato"),
+      heading_font = bslib::font_google("Crimson Text")
     ),
     
-    tabPanel(
-      "Ward Comparison",
-      icon = icon("chart-line"),
-      value = "comparison_tab",
-      communityComparisonUI("comparison_tab")
+    # Add custom CSS to ensure images load
+    tags$head(
+      tags$style(HTML("
+        .navbar-brand img {
+          display: inline-block;
+          vertical-align: middle;
+        }
+      "))
+    ),
+    
+    # Dropdown menu for visualizations
+    navbarMenu(
+      "Tabs",
+      icon = icon("chart-bar"),
+      
+      tabPanel(
+        "Map Visualization",
+        icon = icon("map"),
+        value = "map_tab",
+        mapExplorerUI("map_tab")
+      ),
+      
+      tabPanel(
+        "Ward Comparison",
+        icon = icon("chart-line"),
+        value = "comparison_tab",
+        communityComparisonUI("comparison_tab")
+      )
     )
   )
 )

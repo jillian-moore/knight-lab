@@ -1,4 +1,6 @@
 # SIMPLE WORDPRESS REST API SCRAPER ----
+
+# load packages ----
 library(httr)
 library(jsonlite)
 library(dplyr)

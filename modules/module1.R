@@ -189,7 +189,7 @@ mapExplorerUI <- function(id) {
     
     # Title panel with logo
     div(class = "title-panel",
-        tags$img(src = sprintf("data:image/jpeg;base64,%s", logo_base64)),
+        tags$img(src = sprintf("data:image/jpeg;base64,%s", logo_base64), style = "height: 60px; width: auto;"),
         div(class = "title-text",
             h2("Chicago Community Map Explorer"),
             p("Explore news coverage patterns across Chicago neighborhoods")

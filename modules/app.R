@@ -38,14 +38,6 @@ source(here("modules/module2.R"))
 # UI ----
 ui <- fluidPage(
   
-  
-  # MAIN TITLE BELOW LOGO
-  div(
-    style = "text-align: center; margin-top: 75px; margin-bottom: 15px;",
-    h1("Chicago Community Analytics", style = "font-family: 'Crimson Text', serif; font-weight: 700; font-size: 72px; color: #dd5600;"),
-    h4("Explore Chicago neighborhoods news coverage and demographics", style = "font-family: 'Lato', sans-serif; font-weight: 400; color: #333333;")
-  ),
-  
   # NAVBAR WITH TABS
   navbarPage(
     title = NULL,   # remove inline title

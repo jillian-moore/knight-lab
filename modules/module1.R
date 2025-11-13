@@ -63,6 +63,22 @@ mapExplorerUI <- function(id) {
           letter-spacing: 0.5px;
           text-transform: uppercase;
         }
+        .citywide-toggle-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+          background: #fff8e1;
+          border-radius: 0;
+          border-left: 4px solid #eec200;
+        }
+        .citywide-toggle-container label {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 600;
+          color: #333333;
+          font-family: 'Lato', sans-serif;
+        }
         .mode-badge {
           display: inline-block;
           padding: 6px 14px;
@@ -221,6 +237,15 @@ mapExplorerUI <- function(id) {
              ),
              
              div(class = "control-section",
+                 h4("Coverage Scope"),
+                 div(class = "citywide-toggle-container",
+                     checkboxInput(ns("include_citywide"), 
+                                   "Include citywide articles in neighborhood counts",
+                                   value = TRUE)
+                 )
+             ),
+             
+             div(class = "control-section",
                  h4("Time Period"),
                  sliderInput(ns("date_range_slider"), NULL,
                              min = as.Date("2020-01-01"),
@@ -282,9 +307,12 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         distinct(community, .keep_all = TRUE)
     }) %>% bindCache("base_census_data")
     
-    # filter articles based on date range and topic
+    # filter articles based on date range, topic, and citywide toggle
     filtered_topic_data <- reactive({
       req(input$date_range_slider, input$blue_var)
+      
+      # Use TRUE as default if include_citywide is not yet initialized
+      include_citywide <- isTRUE(input$include_citywide)
       
       df <- article_data
       
@@ -296,6 +324,34 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       # filter by topic if selected
       if (input$blue_var != "None") {
         df <- df %>% filter(topic_match == input$blue_var)
+      }
+      
+      # handle citywide toggle
+      if (include_citywide) {
+        # distribute citywide articles to ALL neighborhoods
+        citywide_articles <- df %>% 
+          filter(community == "chicago")
+        
+        neighborhood_articles <- df %>% 
+          filter(community != "chicago")
+        
+        if (nrow(citywide_articles) > 0) {
+          # get all unique neighborhoods
+          all_neighborhoods <- unique(chi_boundaries_sf$community)
+          
+          # replicate citywide articles for each neighborhood
+          citywide_distributed <- citywide_articles %>%
+            slice(rep(1:n(), each = length(all_neighborhoods))) %>%
+            mutate(community = rep(all_neighborhoods, times = nrow(citywide_articles)))
+          
+          # combine with neighborhood-specific articles
+          df <- bind_rows(neighborhood_articles, citywide_distributed)
+        } else {
+          df <- neighborhood_articles
+        }
+      } else {
+        # exclude citywide articles completely
+        df <- df %>% filter(community != "chicago")
       }
       
       # count articles per community
@@ -314,7 +370,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         mutate(article_count = replace_na(article_count, 0))
       
       topic_summary
-    }) %>% bindCache(input$date_range_slider, input$blue_var)
+    }) %>% bindCache(input$date_range_slider, input$blue_var, input$include_citywide)
     
     # initialize map once
     output$map <- renderLeaflet({
@@ -375,7 +431,22 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       # determine colors - Orange Line palette
       fill_colors <- rep("#f1f3f2", n)  # color-tertiary-light for no data
       
-      if (input$blue_var != "None" && (input$demo_var == "None")) {
+      # CITYWIDE TOGGLE ONLY - show blue when everything else is "None"
+      if (input$blue_var == "None" && input$demo_var == "None" && isTRUE(input$include_citywide)) {
+        # Blue gradient for citywide-only view
+        citywide_max <- max(map_data$article_count, na.rm = TRUE)
+        if (!is.infinite(citywide_max) && citywide_max > 0) {
+          fill_colors <- sapply(1:n, function(i) {
+            if (map_data$article_count[i] == 0) return("#f1f3f2")
+            intensity <- sqrt(map_data$article_count[i] / citywide_max)
+            # From light cyan to dark teal
+            r <- round(173 + (0 - 173) * intensity)
+            g <- round(216 + (121 - 216) * intensity)
+            b <- round(230 + (147 - 230) * intensity)
+            rgb(r, g, b, maxColorValue = 255)
+          })
+        }
+      } else if (input$blue_var != "None" && (input$demo_var == "None")) {
         # Blue gradient: complementary light to dark
         fill_colors <- sapply(1:n, function(i) {
           intensity <- blue_intensity[i]
@@ -584,12 +655,13 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       }
     })
     
-    # date range text
+    # date range text with citywide indicator
     output$date_range_text <- renderText({
       req(input$date_range_slider)
+      citywide_text <- if(isTRUE(input$include_citywide)) "includes citywide" else "neighborhood-only"
       paste0("📅 Selected Period: ", format(input$date_range_slider[1], "%b %Y"), 
              " - ", format(input$date_range_slider[2], "%b %Y"),
-             " • 📊 Census: ACS 2020-2024")
+             " • 📊 Census: ACS 2020-2024 • 🌐 Coverage: ", citywide_text)
     })
   })
 }

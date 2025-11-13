@@ -18,8 +18,6 @@ census <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) 
 chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> 
   janitor::clean_names()
 
-ai_tags <- readRDS(here("data/topic_tag_1050.rds"))
-
 # census clean ----
 census_clean <- census |> 
   mutate(
@@ -173,7 +171,7 @@ neighborhood_mapping <- tribble(
   "West Pullman", "West Pullman",
   "Riverdale", "Riverdale",
   "Hegewisch", "Hegewisch"
-) |>
+  ) |>
   mutate(
     sub_community = str_to_lower(str_trim(sub_community)), 
     chi_community = str_to_lower(str_trim(chi_community))  
@@ -277,8 +275,7 @@ api_clean <- api_clean |>
   ) |> 
   mutate(neighborhood1 = replace_na(neighborhood1, "chicago"))
 
-# add topics ----
-# at random
+# add topics (at random) ----
 # selected topics
 topics <- c(
   "Arts & Culture", "Business", "Crime & Public Safety", "Education",
@@ -291,11 +288,8 @@ api_clean <- api_clean |>
     random_topic = sample(topics, size = n(), replace = TRUE)
   )
 
-# from AI
-
-
 # merge files ----
-# shapefile and census merge (77 neighborhoods only)
+# shapefile and census merge
 chi_boundaries_clean <- chi_boundaries |> 
   select(community, the_geom, area_num_1, shape_area, shape_len) |> 
   left_join(census_clean, by = "community") |> 
@@ -317,7 +311,7 @@ api_long <- api_clean |>
   filter(!is.na(community) & community != "") |> 
   select(-neighborhood_col)
 
-# keep individual article rows with dates (includes BOTH neighborhood and citywide)
+# keep individual article rows with dates
 api_detail <- api_long |> 
   select(community, random_topic, date, year, month, year_month)
 
@@ -341,65 +335,10 @@ api_community_totals <- api_long |>
     .groups = "drop"
   )
 
-# NEW: Create aggregated "chicago" row with total population from all neighborhoods
-chicago_totals <- census_clean |> 
-  summarise(
-    community = "chicago",
-    total_population = sum(total_population, na.rm = TRUE),
-    white = sum(white, na.rm = TRUE),
-    black_or_african_american = sum(black_or_african_american, na.rm = TRUE),
-    american_indian_or_alaska_native = sum(american_indian_or_alaska_native, na.rm = TRUE),
-    asian = sum(asian, na.rm = TRUE),
-    native_hawaiian_or_pacific_islander = sum(native_hawaiian_or_pacific_islander, na.rm = TRUE),
-    other_race = sum(other_race, na.rm = TRUE),
-    multiracial = sum(multiracial, na.rm = TRUE),
-    hispanic_or_latino = sum(hispanic_or_latino, na.rm = TRUE),
-    white_not_hispanic_or_latino = sum(white_not_hispanic_or_latino, na.rm = TRUE),
-    under_25_000 = sum(under_25_000, na.rm = TRUE),
-    x25_000_to_49_999 = sum(x25_000_to_49_999, na.rm = TRUE),
-    x50_000_to_74_999 = sum(x50_000_to_74_999, na.rm = TRUE),
-    x75_000_to_125_000 = sum(x75_000_to_125_000, na.rm = TRUE),
-    x125_000 = sum(x125_000, na.rm = TRUE),
-    age_0_17 = sum(age_0_17, na.rm = TRUE),
-    age_18_24 = sum(age_18_24, na.rm = TRUE),
-    age_25_34 = sum(age_25_34, na.rm = TRUE),
-    age_35_49 = sum(age_35_49, na.rm = TRUE),
-    age_50_64 = sum(age_50_64, na.rm = TRUE),
-    age_65_plus = sum(age_65_plus, na.rm = TRUE),
-    # Placeholder values for spatial columns
-    the_geom = NA_character_,
-    area_num_1 = NA_real_,
-    shape_area = NA_real_,
-    shape_len = NA_real_,
-    acs_year = NA_real_
-  )
-
-# merge with spatial data (77 neighborhoods only, then add chicago row)
-full_data_neighborhoods <- chi_boundaries_clean |> 
-  left_join(
-    api_community_totals |> filter(community != "chicago"), 
-    by = "community"
-  ) |> 
-  left_join(
-    api_summary |> filter(community != "chicago"), 
-    by = "community", 
-    relationship = "many-to-many"
-  )
-
-# merge citywide data
-full_data_citywide <- chicago_totals |>
-  left_join(
-    api_community_totals |> filter(community == "chicago"),
-    by = "community"
-  ) |>
-  left_join(
-    api_summary |> filter(community == "chicago"),
-    by = "community",
-    relationship = "many-to-many"
-  )
-
-# combine neighborhoods and citywide
-full_data <- bind_rows(full_data_neighborhoods, full_data_citywide)
+# merge with spatial data
+full_data <- chi_boundaries_clean |> 
+  left_join(api_community_totals, by = "community") |> 
+  left_join(api_summary, by = "community", relationship = "many-to-many")
 
 # clean up and handle NAs
 full_data <- full_data |> 
@@ -423,7 +362,7 @@ full_data <- full_data |>
                                 (total_articles / total_population) * 1000, 
                                 0),
     
-    # Articles per 1,000 by AGE
+    # Articles per 1,000 by TOTAL POPULATION
     topic_articles_per_0_17 = if_else(age_0_17 > 0, 
                                       article_count / age_0_17, 
                                       0),
@@ -492,7 +431,7 @@ full_data <- full_data |>
 
 # prepare data for shiny app ----
 
-# create chi_boundaries_sf (spatial data with census info - 77 NEIGHBORHOODS ONLY, no chicago)
+# create chi_boundaries_sf (spatial data with census info)
 chi_boundaries_sf <- chi_boundaries_clean |> 
   st_as_sf(wkt = "the_geom", crs = 4326) |> 
   select(community, total_population, white, black_or_african_american, 
@@ -504,7 +443,7 @@ chi_boundaries_sf <- chi_boundaries_clean |>
          the_geom) |> 
   distinct(community, .keep_all = TRUE)
 
-# create article_data (includes BOTH neighborhood AND citywide articles)
+# create article_data (long format with one row per article-community)
 article_data <- api_detail |> 
   rename(
     article_date = date,
@@ -512,7 +451,7 @@ article_data <- api_detail |>
   ) |> 
   select(community, topic_match, article_date, year, month, year_month)
 
-# create topics vector
+# 3. create topics vector
 topic_choices <- c(
   "Arts & Culture", "Business", "Crime & Public Safety", "Education",
   "Food & Restaurants", "Health & Environment", "Housing", "Immigration",
@@ -544,30 +483,20 @@ demo_choices <- c(
   "Age: 65+" = "age_65_plus"
 )
 
-# convert date_range to list format
-date_range <- list(
-  min_date = date_range$min_date,
-  max_date = date_range$max_date
-)
+# get date range
+date_range <- api_detail |> 
+  summarise(
+    min_date = min(date, na.rm = TRUE),
+    max_date = max(date, na.rm = TRUE)
+  )
 
 # save out ----
 save(
-  full_data,              # 77 neighborhoods + 1 "chicago" row with aggregated census
-  chi_boundaries_sf,      # Only 77 neighborhoods with spatial boundaries
-  article_data,           # ALL articles including "chicago" citywide
-  date_range,             # Date range for slider
-  topic_choices,          # Topic options
-  demo_choices,           # Demographic variable options
+  full_data,
+  chi_boundaries_sf,
+  article_data,
+  date_range,
+  topic_choices,
+  demo_choices,
   file = here("data/full_data.rda")
 )
-
-# Print summary
-cat("\n✅ Data saved successfully!\n")
-cat("   • full_data: ", nrow(full_data), "rows (77 neighborhoods + citywide category)\n")
-cat("     - Neighborhood rows: ", sum(full_data$community != "chicago"), "\n")
-cat("     - Citywide rows: ", sum(full_data$community == "chicago"), "\n")
-cat("   • chi_boundaries_sf: ", nrow(chi_boundaries_sf), "neighborhoods (spatial only)\n")
-cat("   • article_data: ", nrow(article_data), "total articles\n")
-cat("     - Neighborhood articles: ", sum(article_data$community != "chicago"), "\n")
-cat("     - Citywide articles: ", sum(article_data$community == "chicago"), "\n")
-cat("   • Date range: ", as.character(date_range$min_date), "to", as.character(date_range$max_date), "\n\n")

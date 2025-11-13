@@ -22,6 +22,7 @@ load(here("data/full_data.rda"))
 # source modules ----
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
+source(here("modules/module3.R"))
 
 # # URL to raw CSV in your GitHub repo branch
 # data_url <- "https://raw.githubusercontent.com/jillian-moore/knight-lab/data-update/data/latest_data.csv"

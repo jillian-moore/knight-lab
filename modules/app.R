@@ -13,7 +13,9 @@ library(scales)
 library(lubridate)
 library(bslib)
 library(fontawesome)
+library(DT)  # Ensure DT is loaded
 
+# encode logo
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
 # source data clean ----
@@ -24,24 +26,12 @@ source(here("modules/module1.R"))
 source(here("modules/module2.R"))
 source(here("modules/module3.R"))
 
-# # URL to raw CSV in your GitHub repo branch
-# data_url <- "https://raw.githubusercontent.com/jillian-moore/knight-lab/data-update/data/latest_data.csv"
-# 
-# # Load data safely, with fallback to local file
-# full_data <- tryCatch(
-#   read_csv(data_url),
-#   error = function(e) {
-#     message("GitHub CSV unavailable, loading local backup")
-#     read_csv(here("data/full_data.csv")) # optional backup
-#   }
-# )
-
 # UI ----
 ui <- fluidPage(
   
   # NAVBAR WITH TABS
   navbarPage(
-    title = NULL,   # remove inline title
+    title = NULL,
     id = "main_navbar",
     windowTitle = "Chicago Community Analytics Dashboard",
     theme = bslib::bs_theme(
@@ -54,7 +44,6 @@ ui <- fluidPage(
       heading_font = bslib::font_google("Crimson Text")
     ),
     
-    # Add custom CSS to ensure images load
     tags$head(
       tags$style(HTML("
         .navbar-brand img {
@@ -64,7 +53,6 @@ ui <- fluidPage(
       "))
     ),
     
-    # Dropdown menu for visualizations
     navbarMenu(
       "Tabs",
       icon = icon("chart-bar"),
@@ -81,6 +69,13 @@ ui <- fluidPage(
         icon = icon("chart-line"),
         value = "comparison_tab",
         communityComparisonUI("comparison_tab")
+      ),
+      
+      tabPanel(
+        "Data Quality",
+        icon = icon("table"),
+        value = "data_quality_tab",
+        dataQualityUI("data_quality_tab")
       )
     )
   )
@@ -92,7 +87,7 @@ server <- function(input, output, session) {
   # Reactive value to store selected community from map click
   selected_ward1 <- reactiveVal(NULL)
   
-  # Map Explorer Module with compare callback
+  # Map Explorer Module
   mapExplorerServer(
     "map_tab",
     chi_boundaries_sf = chi_boundaries_sf,
@@ -101,10 +96,7 @@ server <- function(input, output, session) {
     topics = topic_choices,
     demo_choices = demo_choices,
     on_compare_click = function(community_name) {
-      # Store the clicked community
       selected_ward1(community_name)
-      
-      # Switch to comparison tab
       updateNavbarPage(session, "main_navbar", selected = "comparison_tab")
     }
   )
@@ -115,6 +107,16 @@ server <- function(input, output, session) {
     full_data = full_data,
     selected_ward1 = selected_ward1
   )
+  
+  # Data Quality Module
+  dataQualityServer(
+    "data_quality_tab",
+    chi_boundaries_sf = chi_boundaries_sf,
+    article_data = article_data
+  )
+  
+  # Optional: Suppress legacy datatable warnings globally
+  options(shiny.legacy.datatable = FALSE)
 }
 
 # RUN APP ----

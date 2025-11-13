@@ -13,7 +13,6 @@ library(scales)
 library(lubridate)
 library(bslib)
 library(fontawesome)
-library(DT)  # Added for dataTableOutput
 
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
@@ -23,23 +22,25 @@ load(here("data/full_data.rda"))
 # source modules ----
 source(here("modules/module1.R"))
 source(here("modules/module2.R"))
-source(here("modules/module3.R"))  # Added third module
+
+# # URL to raw CSV in your GitHub repo branch
+# data_url <- "https://raw.githubusercontent.com/jillian-moore/knight-lab/data-update/data/latest_data.csv"
+# 
+# # Load data safely, with fallback to local file
+# full_data <- tryCatch(
+#   read_csv(data_url),
+#   error = function(e) {
+#     message("GitHub CSV unavailable, loading local backup")
+#     read_csv(here("data/full_data.csv")) # optional backup
+#   }
+# )
 
 # UI ----
 ui <- fluidPage(
   
-  # MAIN TITLE BELOW LOGO
-  div(
-    style = "text-align: center; margin-top: 75px; margin-bottom: 15px;",
-    h1("Chicago Community Analytics", 
-       style = "font-family: 'Crimson Text', serif; font-weight: 700; font-size: 72px; color: #dd5600;"),
-    h4("Explore Chicago neighborhoods news coverage and demographics", 
-       style = "font-family: 'Lato', sans-serif; font-weight: 400; color: #333333;")
-  ),
-  
   # NAVBAR WITH TABS
   navbarPage(
-    title = NULL,
+    title = NULL,   # remove inline title
     id = "main_navbar",
     windowTitle = "Chicago Community Analytics Dashboard",
     theme = bslib::bs_theme(
@@ -79,13 +80,6 @@ ui <- fluidPage(
         icon = icon("chart-line"),
         value = "comparison_tab",
         communityComparisonUI("comparison_tab")
-      ),
-      
-      tabPanel(
-        "Data Quality",
-        icon = icon("clipboard-check"),
-        value = "quality_tab",
-        dataQualityUI("quality_tab")
       )
     )
   )
@@ -119,13 +113,6 @@ server <- function(input, output, session) {
     "comparison_tab",
     full_data = full_data,
     selected_ward1 = selected_ward1
-  )
-  
-  # Data Quality Module
-  dataQualityServer(
-    "quality_tab",
-    chi_boundaries_sf = chi_boundaries_sf,
-    article_data = article_data
   )
 }
 

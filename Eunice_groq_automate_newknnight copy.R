@@ -143,7 +143,7 @@ process_with_auto_restart <- function(total_articles = NULL,
   # Load all articles once
   all_articles_full <- readRDS("data/api_scrape.rds") %>%
     mutate(original_row_id = row_number()) %>%
-    select(original_row_id, content.rendered)
+    select(id, original_row_id, content.rendered)
   
   if (!is.null(total_articles)) {
     all_articles_full <- all_articles_full %>%

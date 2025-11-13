@@ -420,7 +420,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         )
       
       ggplot(income_totals, aes(x = income_bracket, y = households)) +
-        geom_col(fill = "#16a085", alpha = 0.8) +
+        geom_col(fill = "#efa8ff", alpha = 0.8) +
         geom_text(aes(label = paste0(comma(households), "\n(", percentage_label, ")")), 
                   vjust = -0.5, size = 3.5) +
         labs(
@@ -500,7 +500,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
       mapping_summary() %>%
         top_n(20, article_count) %>%
         ggplot(aes(x = reorder(community, article_count), y = article_count)) +
-        geom_col(fill = "#27ae60", alpha = 0.8) +
+        geom_col(fill = "#efa8ff", alpha = 0.8) +
         geom_text(aes(label = comma(article_count)), hjust = -0.1, size = 3) +
         coord_flip() +
         labs(

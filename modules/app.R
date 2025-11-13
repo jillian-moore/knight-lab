@@ -53,7 +53,7 @@ ui <- fluidPage(
       bg = "#f1f3f2",
       fg = "#333333",
       primary = "#dd5600",
-      secondary = "#00bf7d",
+      secondary = "#ffa914",
       base_font = bslib::font_google("Lato"),
       heading_font = bslib::font_google("Crimson Text")
     ),

@@ -23,7 +23,7 @@ contextTabUI <- function(id) {
         }
         
         .hero-section {
-          background: linear-gradient(135deg, #dd5600 0%, #ff7a33 50%, #00bf7d 100%);
+          background: linear-gradient(135deg, #dd5600 0%, #ff7a33 50%, #ffa914 100%);
           color: white;
           padding: 80px 40px;
           border-radius: 20px;
@@ -106,7 +106,7 @@ contextTabUI <- function(id) {
           transform: translateX(-50%);
           width: 100px;
           height: 4px;
-          background: linear-gradient(90deg, #dd5600, #00bf7d);
+          background: linear-gradient(90deg, #dd5600, #ffa914);
           border-radius: 2px;
         }
         
@@ -156,7 +156,7 @@ contextTabUI <- function(id) {
           left: 0;
           right: 0;
           height: 5px;
-          background: linear-gradient(90deg, #dd5600, #00bf7d);
+          background: linear-gradient(90deg, #dd5600, #ffa914);
           transform: scaleX(0);
           transition: transform 0.4s ease;
         }
@@ -184,7 +184,7 @@ contextTabUI <- function(id) {
           width: 140px;
           height: 140px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #dd5600, #00bf7d);
+          background: linear-gradient(135deg, #dd5600, #ffa914);
           z-index: -1;
           opacity: 0;
           transition: opacity 0.4s ease;
@@ -234,7 +234,7 @@ contextTabUI <- function(id) {
         
         .author-content h4 {
           margin: 0 0 20px 0;
-          color: #00bf7d;
+          color: #ffa914;
           font-size: 0.9rem;
           font-weight: 600;
           text-transform: uppercase;
@@ -273,7 +273,7 @@ contextTabUI <- function(id) {
         
         .list--social a:hover {
           color: white;
-          background: linear-gradient(135deg, #dd5600, #ff7a33);
+          background: linear-gradient(135deg, #dd5600, #ffa914);
           transform: scale(1.15) rotate(5deg);
         }
         
@@ -321,7 +321,7 @@ contextTabUI <- function(id) {
           position: absolute;
           left: 0;
           top: 0;
-          background: linear-gradient(135deg, #dd5600, #ff7a33);
+          background: linear-gradient(135deg, #dd5600, #ffa914);
           color: white;
           width: 30px;
           height: 30px;
@@ -337,7 +337,7 @@ contextTabUI <- function(id) {
           background: white;
           padding: 30px;
           border-radius: 15px;
-          border-left: 5px solid #00bf7d;
+          border-left: 5px solid #ffa914;
           margin: 30px 0;
           box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         }
@@ -345,7 +345,6 @@ contextTabUI <- function(id) {
     ),
     
     div(class = "context-container",
-        
         # Hero Section
         div(class = "hero-section",
             h1("Local News Lens"),

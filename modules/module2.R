@@ -440,7 +440,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
                               color = community_label, group = community_label)) +
         geom_line(size = 1.5) +
         geom_point(size = 2.5) +
-        scale_color_manual(values = c("#dd5600", "#00bf7d")) +
+        scale_color_manual(values = c("#dd5600", "#ffa914")) +
         scale_x_date(date_breaks = "3 months", date_labels = "%b %Y") +
         labs(
           x = NULL,
@@ -534,7 +534,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       
       ggplot(pyr_data, aes(x = plot_value, y = category, fill = community)) +
         geom_bar(stat = "identity") +
-        scale_fill_manual(values = c("#dd5600", "#00bf7d")) +
+        scale_fill_manual(values = c("#dd5600", "#ffa914")) +
         scale_x_continuous(
           labels = function(x) format(abs(x), big.mark = ","),
           limits = c(-max_val * 1.1, max_val * 1.1)

@@ -24,7 +24,7 @@ jobs:
       - name: Install R packages
         run: |
           Rscript -e "install.packages(
-            c('httr','rvest','dplyr','tidyr','lubridate','jsonlite','readr'),
+            c('curl', 'httr', 'rvest','dplyr','tidyr','lubridate','jsonlite','readr'),
             repos='https://cloud.r-project.org'
           )"
 

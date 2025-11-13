@@ -7,6 +7,8 @@ library(rvest)
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+file.copy("data/my_openai_checkpoint.rds", "data/backup_checkpoint.rds")
+
 openai_api_key <- Sys.getenv("OPEN_AI_KEY")
 
 VALID_TOPICS <- c(
@@ -175,6 +177,7 @@ process_with_auto_restart <- function(total_articles = NULL,
       
     } else {
       results <- tibble(
+        id = character(),
         row_id = integer(),
         content.rendered = character(),
         topic_tag = character(),
@@ -230,6 +233,7 @@ process_with_auto_restart <- function(total_articles = NULL,
       
       # Add result
       new_row <- tibble(
+        id = article$id,
         row_id = article$original_row_id,
         content.rendered = article$content.rendered,
         topic_tag = classification$topic,

@@ -5,6 +5,14 @@
 contextTabUI <- function(id) {
   ns <- NS(id)
   
+  # Encode images to base64
+  melissa_img <- base64enc::base64encode(here::here("www/melissa headshot.jpeg"))
+  jillian_img <- base64enc::base64encode(here::here("www/jillian headshot.jpeg"))
+  sophia_img <- base64enc::base64encode(here::here("www/sophia headshot.jpeg"))
+  keya_img <- base64enc::base64encode(here::here("www/keya headshot.jpg"))
+  eunice_img <- base64enc::base64encode(here::here("www/eunice headshot.jpeg"))
+  jill_img <- base64enc::base64encode(here::here("www/jill headshot.jpg"))
+  
   tagList(
     tags$head(
       tags$style(HTML("
@@ -364,12 +372,12 @@ contextTabUI <- function(id) {
               p("Passionate journalists and technologists working to improve local news equity")
           ),
           
-          # First Row
+          # First Row: Melissa, Jillian, Sophia
           div(class = "bio-grid",
               # Melissa Dai
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Melissa Dai")
+                    tags$img(src = paste0("data:image/jpeg;base64,", melissa_img), alt = "Melissa Dai")
                   ),
                   div(class = "author-content",
                       tags$a(href = "https://www.linkedin.com/in/melissadai/", target = "_blank",
@@ -386,7 +394,7 @@ contextTabUI <- function(id) {
               # Jillian Moore
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Jillian Moore")
+                    tags$img(src = paste0("data:image/jpeg;base64,", jillian_img), alt = "Jillian Moore")
                   ),
                   div(class = "author-content",
                       tags$a(href = "https://www.linkedin.com/in/jillian-moore26/", target = "_blank",
@@ -404,7 +412,7 @@ contextTabUI <- function(id) {
               # Sophia Zhang
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Sophia Zhang")
+                    tags$img(src = paste0("data:image/jpeg;base64,", sophia_img), alt = "Sophia Zhang")
                   ),
                   div(class = "author-content",
                       tags$a(href = "https://www.linkedin.com/in/s0phiazhang", target = "_blank",
@@ -419,12 +427,12 @@ contextTabUI <- function(id) {
               )
           ),
           
-          # Second Row
+          # Second Row: Keya, Eunice, Jill
           div(class = "bio-grid",
               # Keya Chaudhuri
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Keya Chaudhuri")
+                    tags$img(src = paste0("data:image/jpeg;base64,", keya_img), alt = "Keya Chaudhuri")
                   ),
                   div(class = "author-content",
                       tags$a(href = "https://www.linkedin.com/in/keyasc/", target = "_blank",
@@ -441,20 +449,19 @@ contextTabUI <- function(id) {
               # Eunice Lee
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Eunice Lee")
+                    tags$img(src = paste0("data:image/jpeg;base64,", eunice_img), alt = "Eunice Lee")
                   ),
                   div(class = "author-content",
                       h3("Eunice Lee"),
                       h4("Chief Intelligence Officer"),
-                      p("Eunice is a junior at Northwestern University studying Journalism and Data Science. She is passionate about data-driven storytelling and survey research. She is especially interested in integrating technology and storytelling, and using creativity and multimedia reporting to bring insight to complicated issues.
-")
+                      p("Eunice is a junior at Northwestern University studying Journalism and Data Science. She is passionate about data-driven storytelling and survey research. She is especially interested in integrating technology and storytelling, and using creativity and multimedia reporting to bring insight to complicated issues.")
                   )
               ),
               
               # Jill Blackman
               div(class = "author-bio--card",
                   tags$figure(
-                    tags$img(src = "https://via.placeholder.com/150", alt = "Jill Blackman")
+                    tags$img(src = paste0("data:image/jpeg;base64,", jill_img), alt = "Jill Blackman")
                   ),
                   div(class = "author-content",
                       tags$a(href = "https://www.linkedin.com/in/jillblackman/", target = "_blank",
@@ -490,8 +497,8 @@ contextTabUI <- function(id) {
             p("Our aim isn't simply to internally flag bias, but to reveal the structural and financial constraints that shape what reporters cover. At nonprofit newsrooms like Block Club Chicago, for example, our tool might provide clear, data-driven visuals that illustrate coverage gaps and help make the case to potential funders. By highlighting these systemic factors, we aim to empower newsrooms to make data-informed editorial decisions, thereby strengthening equitable journalism and local news coverage overall.")
         )
     )
-  )  # <- closes tagList
-}    # <- closes function
+  )
+}
 
 # SERVER ----
 contextTabServer <- function(id) {

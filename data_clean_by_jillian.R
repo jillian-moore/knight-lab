@@ -415,7 +415,7 @@ full_data <- full_data |>
 # add per person calculations
 full_data <- full_data |>
   mutate(
-    # Overall articles per person
+    # overall articles per person
     articles_per_person = if_else(total_population > 0, 
                                   total_articles / total_population, 
                                   0),
@@ -423,7 +423,7 @@ full_data <- full_data |>
                                 (total_articles / total_population) * 1000, 
                                 0),
     
-    # Articles per 1,000 by AGE
+    # articles per 1,000 by AGE
     topic_articles_per_0_17 = if_else(age_0_17 > 0, 
                                       article_count / age_0_17, 
                                       0),
@@ -443,7 +443,7 @@ full_data <- full_data |>
                                          article_count / age_65_plus, 
                                          0),
     
-    # Articles per 1,000 by RACE/ETHNICITY
+    # articles per 1,000 by RACE/ETHNICITY
     articles_per_white = if_else(white > 0, 
                                  article_count / white * 1000, 
                                  0),
@@ -472,7 +472,7 @@ full_data <- full_data |>
                                               article_count / white_not_hispanic_or_latino * 1000, 
                                               0),
     
-    # Articles per 1,000 by INCOME bracket
+    # articles per 1,000 by INCOME bracket
     articles_per_under_25k = if_else(under_25_000 > 0, 
                                      article_count / under_25_000 * 1000, 
                                      0),
@@ -560,14 +560,3 @@ save(
   demo_choices,           # Demographic variable options
   file = here("data/full_data.rda")
 )
-
-# Print summary
-cat("\n✅ Data saved successfully!\n")
-cat("   • full_data: ", nrow(full_data), "rows (77 neighborhoods + citywide category)\n")
-cat("     - Neighborhood rows: ", sum(full_data$community != "chicago"), "\n")
-cat("     - Citywide rows: ", sum(full_data$community == "chicago"), "\n")
-cat("   • chi_boundaries_sf: ", nrow(chi_boundaries_sf), "neighborhoods (spatial only)\n")
-cat("   • article_data: ", nrow(article_data), "total articles\n")
-cat("     - Neighborhood articles: ", sum(article_data$community != "chicago"), "\n")
-cat("     - Citywide articles: ", sum(article_data$community == "chicago"), "\n")
-cat("   • Date range: ", as.character(date_range$min_date), "to", as.character(date_range$max_date), "\n\n")

@@ -1,5 +1,6 @@
-# MAIN DASHBOARD
-# load packages ----
+# MAIN DASHBOARD ----
+
+# Load packages ----
 library(shiny)
 library(leaflet)
 library(sf)
@@ -13,23 +14,36 @@ library(scales)
 library(lubridate)
 library(bslib)
 library(fontawesome)
-library(DT)  # Ensure DT is loaded
+library(DT)
+library(base64enc)
 
-# encode logo
+# Encode logo ----
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
-# source data clean ----
+# Load data ----
 load(here("data/full_data.rda"))
 
-# source modules ----
-source(here("modules/module1.R"))
-source(here("modules/module2.R"))
-source(here("modules/module3.R"))
+# Source modules ----
+source(here("modules/module1.R"))   # mapExplorerUI / Server
+source(here("modules/module2.R"))   # communityComparisonUI / Server
+source(here("modules/module3.R"))   # dataQualityUI / Server
+source(here("modules/module4.R"))   # contextTabUI / Server
 
 # UI ----
 ui <- fluidPage(
   
-  # NAVBAR WITH TABS
+  # Global custom CSS ----
+  tags$head(
+    tags$style(HTML("
+      .navbar-brand img {
+        display: inline-block;
+        vertical-align: middle;
+        height: 40px;
+      }
+    "))
+  ),
+  
+  # NAVBAR WITH TABS ----
   navbarPage(
     title = NULL,
     id = "main_navbar",
@@ -42,15 +56,6 @@ ui <- fluidPage(
       secondary = "#00bf7d",
       base_font = bslib::font_google("Lato"),
       heading_font = bslib::font_google("Crimson Text")
-    ),
-    
-    tags$head(
-      tags$style(HTML("
-        .navbar-brand img {
-          display: inline-block;
-          vertical-align: middle;
-        }
-      "))
     ),
     
     navbarMenu(
@@ -76,6 +81,13 @@ ui <- fluidPage(
         icon = icon("table"),
         value = "data_quality_tab",
         dataQualityUI("data_quality_tab")
+      ),
+      
+      tabPanel(
+        "About / Context",
+        icon = icon("info-circle"),
+        value = "context_tab",
+        contextTabUI("context_tab")
       )
     )
   )
@@ -84,7 +96,7 @@ ui <- fluidPage(
 # SERVER ----
 server <- function(input, output, session) {
   
-  # Reactive value to store selected community from map click
+  # Reactive value for selected ward
   selected_ward1 <- reactiveVal(NULL)
   
   # Map Explorer Module
@@ -115,7 +127,10 @@ server <- function(input, output, session) {
     article_data = article_data
   )
   
-  # Optional: Suppress legacy datatable warnings globally
+  # Context / About Tab Module
+  contextTabServer("context_tab")
+  
+  # Optional: Suppress legacy DT warnings
   options(shiny.legacy.datatable = FALSE)
 }
 

@@ -251,8 +251,7 @@ mapExplorerUI <- function(id) {
                              min = as.Date("2020-01-01"),
                              max = Sys.Date(),
                              value = c(as.Date("2020-01-01"), Sys.Date()),
-                             step = 31,
-                             animate = animationOptions(interval = 2000, loop = TRUE))
+                             step = 31)
              )
       ),
       

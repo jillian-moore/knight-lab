@@ -355,7 +355,7 @@ contextTabUI <- function(id) {
                 ),
                 div(class = "hero-card",
                     h3("What?"),
-                    p("The Local News Lens is a newsroom-serving dashboard that tracks local coverage by geography, topic and census data. Built in RStudio with Shiny.")
+                    p("The Local News Lens is a newsroom-serving dashboard that tracks local coverage by geography, topic and census data. Built in RStudio with Shiny, it maps coverage across Chicago neighborhoods and includes filters for topics (e.g. art, science), census metrics (e.g. race, income), and time period (e.g. past six months).")
                 ),
                 div(class = "hero-card",
                     h3("Why?"),
@@ -453,7 +453,11 @@ contextTabUI <- function(id) {
                   div(class = "author-content",
                       h3("Eunice Lee"),
                       h4("Chief Intelligence Officer"),
-                      p("Eunice is a junior at Northwestern University studying Journalism and Data Science. She is passionate about data-driven storytelling and survey research. She is especially interested in integrating technology and storytelling, and using creativity and multimedia reporting to bring insight to complicated issues.")
+                      p("Eunice is a junior at Northwestern University studying Journalism and Data Science. She is passionate about data-driven storytelling and survey research. She is especially interested in integrating technology and storytelling, and using creativity and multimedia reporting to bring insight to complicated issues."),
+                      tags$ul(class = "list--social",
+                              tags$li(tags$a(href = "https://www.linkedin.com/in/eunicelee/", target = "_blank", icon("linkedin"))),
+                              tags$li(tags$a(href = "mailto:eunsoolee2027@u.northwestern.edu", icon("envelope")))
+                      )
                   )
               ),
               

@@ -558,7 +558,8 @@ date_range <- list(
 
 # save out ----
 save(
-  full_data,              # 77 neighborhoods + 1 "chicago" row with aggregated census
+  full_data,
+  article_data, 
   chi_boundaries_sf,      # Only 77 neighborhoods with spatial boundaries
   article_data,           # ALL articles including "chicago" citywide
   date_range,             # Date range for slider
@@ -566,3 +567,5 @@ save(
   demo_choices,           # Demographic variable options
   file = here("data/full_data.rda")
 )
+
+save(api_clean, file = here("data/ai_check_data.rda"))

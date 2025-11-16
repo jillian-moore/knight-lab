@@ -3,22 +3,23 @@
 library(tidyverse)
 
 # load data ----
-load(here("data/full_data.rda"))
+load(here("data/ai_check_data.rda"))
 
 # four datasets of randomly assigned topics
-eunice <- full_data |> slice_sample(n = 10) |> 
-  select(-topic_tag)
-keya <- full_data |> slice_sample(n = 10) |> 
-  select(-topic_tag)
-jillian <- full_data |> slice_sample(n = 10) |> 
-  select(-topic_tag)
-melissa <- full_data |> slice_sample(n = 10) |> 
-  select(-topic_tag)
-sophia <- full_data |> slice_sample(n = 10) |> 
-  select(-topic_tag)
+eunice <- api_clean |> slice_sample(n = 10) |> 
+  select(id, content.rendered)
+keya <- api_clean |> slice_sample(n = 10) |> 
+  select(id, content.rendered)
+jillian <- api_clean |> slice_sample(n = 10) |> 
+  select(id, content.rendered)
+melissa <- api_clean |> slice_sample(n = 10) |> 
+  select(id, content.rendered)
+sophia <- api_clean |> slice_sample(n = 10) |> 
+  select(id, content.rendered)
 
 write_csv(eunice, here("ai_check/eunice.csv"))
 write_csv(keya, here("ai_check/keya.csv"))
 write_csv(jillian, here("ai_check/jillian.csv"))
 write_csv(melissa, here("ai_check/melissa.csv"))
 write_csv(sophia, here("ai_check/sophia.csv"))
+jillian <- read_csv(here("ai_check/jillian.csv"))

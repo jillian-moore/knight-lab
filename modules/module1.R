@@ -200,6 +200,54 @@ mapExplorerUI <- function(id) {
         .popup-compare-btn:hover {
           background: #c24c00;
         }
+        .map-legend {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: white;
+          padding: 15px;
+          border-radius: 0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          border: 1px solid #c9ccc8;
+          z-index: 1000;
+          max-width: 280px;
+          font-family: 'Lato', sans-serif;
+        }
+        .legend-title {
+          font-size: 12px;
+          font-weight: 700;
+          color: #dd5600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 12px;
+          border-bottom: 2px solid #f1f3f2;
+          padding-bottom: 6px;
+        }
+        .legend-gradient {
+          height: 20px;
+          background: linear-gradient(to right, #eec200, #00bf7d, #007993);
+          margin: 10px 0;
+          border: 1px solid #c9ccc8;
+        }
+        .legend-labels {
+          display: flex;
+          justify-content: space-between;
+          font-size: 10px;
+          color: #666666;
+          margin-bottom: 8px;
+        }
+        .legend-description {
+          font-size: 11px;
+          color: #666666;
+          line-height: 1.5;
+          margin-top: 10px;
+        }
+        .legend-note {
+          font-size: 10px;
+          color: #999999;
+          font-style: italic;
+          margin-top: 8px;
+        }
       "))
     ),
     
@@ -256,7 +304,11 @@ mapExplorerUI <- function(id) {
       ),
       
       column(8,
-             leafletOutput(ns("map"), height = "750px"),
+             div(style = "position: relative;",
+                 leafletOutput(ns("map"), height = "750px"),
+                 # Legend overlay
+                 uiOutput(ns("map_legend"))
+             ),
              tags$div(style = "text-align: center; margin-top: 15px; font-size: 13px; color: #666666; font-weight: 400; font-family: 'Lato', sans-serif;",
                       textOutput(ns("date_range_text"))
              )
@@ -654,13 +706,37 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       }
     })
     
+    # Render dynamic legend based on selections
+    output$map_legend <- renderUI({
+      # Only show legend when both topic and demographic are selected
+      if (input$blue_var != "None" && input$demo_var != "None") {
+        div(class = "map-legend",
+            div(class = "legend-title", "Coverage Ratio"),
+            div(class = "legend-gradient"),
+            div(class = "legend-labels",
+                span("More Demographics"),
+                span("Balanced"),
+                span("More Coverage")
+            ),
+            div(class = "legend-description",
+                HTML("<b>Yellow-green:</b> Higher demographic proportion<br>
+                     <b>Blue-green:</b> Higher article coverage<br>
+                     <b>Green:</b> Balanced ratio")
+            ),
+            div(class = "legend-note",
+                "Color intensity shows relative proportions"
+            )
+        )
+      }
+    })
+    
     # date range text with citywide indicator
     output$date_range_text <- renderText({
       req(input$date_range_slider)
       citywide_text <- if(isTRUE(input$include_citywide)) "includes citywide" else "neighborhood-only"
-      paste0("📅 Selected Period: ", format(input$date_range_slider[1], "%b %Y"), 
+      paste0("Selected Period: ", format(input$date_range_slider[1], "%b %Y"), 
              " - ", format(input$date_range_slider[2], "%b %Y"),
-             " • 📊 Census: ACS 2020-2024 • 🌐 Coverage: ", citywide_text)
+             "Census: ACS 2020-2024 • Coverage: ", citywide_text)
     })
   })
 }

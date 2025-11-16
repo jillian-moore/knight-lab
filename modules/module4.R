@@ -470,7 +470,7 @@ contextTabUI <- function(id) {
                       tags$a(href = "https://www.linkedin.com/in/jillblackman/", target = "_blank",
                              h3("Jill Blackman")),
                       h4("Chief Faculty Advisor"),
-                      p("Faculty advisor guiding the Local News Lens project at Northwestern's Knight Lab Studio."),
+                      p("Jill Braverman Blackman is the team’s faculty advisor at Northwestern’s Knight Lab Studio. She is passionate about storytelling and shares her enthusiasm and knowledge as a lecturer at Medill with a specialization in digital storytelling."),
                       tags$ul(class = "list--social",
                               tags$li(tags$a(href = "https://www.linkedin.com/in/jillblackman/", target = "_blank", icon("linkedin"))),
                               tags$li(tags$a(href = "mailto:jill.blackman@northwestern.edu", icon("envelope")))

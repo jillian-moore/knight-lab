@@ -281,16 +281,9 @@ contextTabUI <- function(id) {
           background: linear-gradient(135deg, #f1f3f2 0%, #e8eae9 100%);
           padding: 60px 40px;
           border-radius: 20px;
-          margin-top: 80px;
+          margin-top: 0px;
+          margin-bottom: 80px;
           box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-        
-        .research-section h2 {
-          color: #dd5600;
-          font-size: 2.5rem;
-          margin-bottom: 30px;
-          font-weight: 700;
-          text-align: center;
         }
         
         .research-section p {
@@ -362,6 +355,31 @@ contextTabUI <- function(id) {
                     p("We approached this project with one primary goal: promoting equity in local news through accessible visualization of coverage patterns.")
                 )
             )
+        ),
+        
+        # Research Context Section (moved before bios)
+        div(class = "research-section",
+            p("With the Local News Lens, our goal was to create a tool grounded in data and reporting trends to help newsrooms identify real coverage gaps. Our initial partnership with Block Club Chicago rooted the project within the city's unique media landscape, but the patterns we found — underreporting and overreporting across neighborhoods — reflect challenges faced by newsrooms everywhere, from big cities to small towns."),
+            
+            p("Research highlights these inequities. Namely, takeaways from two studies — one from ", 
+              tags$a(href = "https://mediaengagement.org/", target = "_blank", 
+                     style = "color: #dd5600; text-decoration: underline; font-weight: 600;",
+                     "UT Austin's Center for Media Engagement"),
+              " and another from the ",
+              tags$a(href = "https://sociology.stanford.edu/", target = "_blank",
+                     style = "color: #dd5600; text-decoration: underline; font-weight: 600;",
+                     "Department of Sociology at Stanford's School of Humanities and Sciences"),
+              " — shaped how we tagged and mapped our data for the Local News Lens. Based on their methods, we chose to highlight three areas:"),
+            
+            tags$ol(
+              tags$li("Article topic"),
+              tags$li("Geography/neighborhood designation"),
+              tags$li("Demographic information")
+            ),
+            
+            p("While many newsrooms already have access to this wide variety of data, few can easily visualize how they interact. The Local News Lens helps editors and reporters view these connections clearly, supporting more equitable storytelling and smarter resource allocation."),
+            
+            p("Our aim isn't simply to internally flag bias, but to reveal the structural and financial constraints that shape what reporters cover. At nonprofit newsrooms like Block Club Chicago, for example, our tool might provide clear, data-driven visuals that illustrate coverage gaps and help make the case to potential funders. By highlighting these systemic factors, we aim to empower newsrooms to make data-informed editorial decisions, thereby strengthening equitable journalism and local news coverage overall.")
         ),
         
         # Team Bios Section
@@ -470,7 +488,7 @@ contextTabUI <- function(id) {
                       tags$a(href = "https://www.linkedin.com/in/jillblackman/", target = "_blank",
                              h3("Jill Blackman")),
                       h4("Chief Faculty Advisor"),
-                      p("Jill Braverman Blackman is the team’s faculty advisor at Northwestern’s Knight Lab Studio. She is passionate about storytelling and shares her enthusiasm and knowledge as a lecturer at Medill with a specialization in digital storytelling."),
+                      p("Jill Braverman Blackman is the team's faculty advisor at Northwestern's Knight Lab Studio. She is passionate about storytelling and shares her enthusiasm and knowledge as a lecturer at Medill with a specialization in digital storytelling."),
                       tags$ul(class = "list--social",
                               tags$li(tags$a(href = "https://www.linkedin.com/in/jillblackman/", target = "_blank", icon("linkedin"))),
                               tags$li(tags$a(href = "mailto:jill.blackman@northwestern.edu", icon("envelope")))
@@ -478,26 +496,6 @@ contextTabUI <- function(id) {
                   )
               )
           )
-        ),
-        
-        # Research Context Section
-        div(class = "research-section",
-            h2("Research Context"),
-            p("With the Local News Lens, our goal was to create a tool grounded in data and reporting trends to help newsrooms identify real coverage gaps. Our initial partnership with Block Club Chicago rooted the project within the city's unique media landscape, but the patterns we found — underreporting and overreporting across neighborhoods — reflect challenges faced by newsrooms everywhere, from big cities to small towns."),
-            
-            div(class = "highlight-box",
-                p("Research highlights these inequities. Namely, takeaways from two studies — one from UT Austin's Center for Media Engagement and another from the Department of Sociology at Stanford's School of Humanities and Sciences — shaped how we tagged and mapped our data for the Local News Lens. Based on their methods, we chose to highlight three areas:")
-            ),
-            
-            tags$ol(
-              tags$li("Article topic"),
-              tags$li("Geography/neighborhood designation"),
-              tags$li("Demographic information")
-            ),
-            
-            p("While many newsrooms already have access to this wide variety of data, few can easily visualize how they interact. The Local News Lens helps editors and reporters view these connections clearly, supporting more equitable storytelling and smarter resource allocation."),
-            
-            p("Our aim isn't simply to internally flag bias, but to reveal the structural and financial constraints that shape what reporters cover. At nonprofit newsrooms like Block Club Chicago, for example, our tool might provide clear, data-driven visuals that illustrate coverage gaps and help make the case to potential funders. By highlighting these systemic factors, we aim to empower newsrooms to make data-informed editorial decisions, thereby strengthening equitable journalism and local news coverage overall.")
         )
     )
   )

@@ -22,4 +22,5 @@ write_csv(keya, here("ai_check/keya.csv"))
 write_csv(jillian, here("ai_check/jillian.csv"))
 write_csv(melissa, here("ai_check/melissa.csv"))
 write_csv(sophia, here("ai_check/sophia.csv"))
-jillian <- read_csv(here("ai_check/jillian.csv"))
+
+jillian_new <- read_csv(here("ai_check/jillian.csv"))

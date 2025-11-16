@@ -7,77 +7,139 @@ dataQualityUI <- function(id) {
   tagList(
     tags$head(
       tags$style(HTML("
-        .quality-header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .title-panel { 
+          background: linear-gradient(135deg, #dd5600 0%, #c24c00 100%);
           color: white;
-          padding: 25px 30px;
-          border-radius: 10px;
-          margin-bottom: 25px;
-          box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+          padding: 20px 25px;
+          border-radius: 0;
+          margin-bottom: 20px;
+          box-shadow: 0 4px 12px rgba(221, 86, 0, 0.25);
+          display: flex;
+          align-items: center;
+          gap: 20px;
         }
-        .quality-header h2 {
-          margin: 0;
-          font-weight: 300;
+        .title-text {
+          flex: 1;
+        }
+        .title-panel h2 { 
+          margin: 0; 
+          font-family: 'Crimson Text', serif;
+          font-weight: 700; 
           font-size: 28px;
         }
-        .quality-header p {
-          margin: 8px 0 0 0;
-          opacity: 0.95;
-          font-size: 15px;
+        .title-panel p { 
+          margin: 6px 0 0 0; 
+          opacity: 0.95; 
+          font-size: 14px; 
+          font-weight: 400;
+          font-family: 'Lato', sans-serif;
+        }
+        .control-section {
+          background: white;
+          padding: 20px;
+          border-radius: 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          margin-bottom: 15px;
+          border: 1px solid #c9ccc8;
+        }
+        .control-section h3, .control-section h4 {
+          margin-top: 0;
+          color: #dd5600;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          border-bottom: 2px solid #f1f3f2;
+          padding-bottom: 8px;
+        }
+        .control-section h3 {
+          font-size: 18px;
+        }
+        .control-section h4 {
+          font-size: 16px;
+          margin-bottom: 15px;
         }
         .metric-card {
           background: white;
-          border-radius: 10px;
+          border-radius: 0;
           padding: 20px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-          border-left: 4px solid #667eea;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          border: 1px solid #c9ccc8;
+          border-left: 4px solid #dd5600;
           margin-bottom: 15px;
-          transition: transform 0.2s;
+          transition: all 0.3s ease;
+          text-align: center;
         }
         .metric-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.12);
         }
         .metric-value {
           font-size: 32px;
           font-weight: 700;
-          color: #667eea;
+          color: #dd5600;
           margin: 5px 0;
+          font-family: 'Crimson Text', serif;
         }
         .metric-label {
-          font-size: 13px;
-          color: #6c757d;
+          font-size: 12px;
+          font-weight: 700;
+          color: #666666;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.05em;
+          font-family: 'Lato', sans-serif;
         }
         .section-card {
           background: white;
-          border-radius: 10px;
+          border-radius: 0;
           padding: 25px;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          border: 1px solid #c9ccc8;
           margin-bottom: 20px;
         }
         .section-card h3 {
-          color: #667eea;
-          font-size: 20px;
-          font-weight: 600;
+          color: #dd5600;
+          font-size: 18px;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
           margin-top: 0;
           margin-bottom: 20px;
-          border-bottom: 2px solid #f0f2f5;
+          border-bottom: 2px solid #f1f3f2;
           padding-bottom: 10px;
         }
         .plot-container {
-          background: #fafbfc;
-          border-radius: 8px;
+          background: #f1f3f2;
+          border-radius: 0;
           padding: 15px;
           margin-top: 15px;
+        }
+        .nav-pills > li > a {
+          border-radius: 0;
+          font-family: 'Lato', sans-serif;
+          font-weight: 600;
+        }
+        .nav-pills > li.active > a,
+        .nav-pills > li.active > a:hover,
+        .nav-pills > li.active > a:focus {
+          background-color: #dd5600;
+        }
+        .methodology-box {
+          background: #f1f3f2;
+          padding: 20px;
+          border-radius: 0;
+          font-family: 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.8;
+          border-left: 4px solid #dd5600;
+          white-space: pre-wrap;
         }
       "))
     ),
     
-    div(class = "quality-header",
-        h2("📊 Data Quality Dashboard"),
-        p("Comprehensive validation and analysis of Chicago community data")
+    # Title panel
+    div(class = "title-panel",
+        div(class = "title-text",
+            h2("Data Quality Dashboard"),
+            p("Comprehensive validation and analysis of Chicago community data")
+        )
     ),
     
     # Summary Metrics Row
@@ -114,7 +176,7 @@ dataQualityUI <- function(id) {
       
       # Topic Distribution Tab
       tabPanel(
-        "📰 Topic Distribution",
+        "Topic Distribution",
         icon = icon("tags"),
         br(),
         fluidRow(
@@ -133,7 +195,7 @@ dataQualityUI <- function(id) {
       
       # Census Demographics Tab
       tabPanel(
-        "👥 Demographics",
+        "Demographics",
         icon = icon("users"),
         br(),
         fluidRow(
@@ -168,7 +230,7 @@ dataQualityUI <- function(id) {
       
       # Publication Trends Tab
       tabPanel(
-        "📈 Publication Trends",
+        "Publication Trends",
         icon = icon("chart-line"),
         br(),
         fluidRow(
@@ -197,7 +259,7 @@ dataQualityUI <- function(id) {
       
       # Neighborhood Coverage Tab
       tabPanel(
-        "🗺️ Neighborhood Coverage",
+        "Neighborhood Coverage",
         icon = icon("map-marked-alt"),
         br(),
         fluidRow(
@@ -220,7 +282,8 @@ dataQualityUI <- function(id) {
           column(6,
                  div(class = "section-card",
                      h3("Low Coverage Neighborhoods"),
-                     p("Communities with fewer than 10 articles:", style = "color: #6c757d; font-size: 14px;"),
+                     p("Communities with fewer than 10 articles:", 
+                       style = "color: #666666; font-size: 14px; font-family: 'Lato', sans-serif;"),
                      dataTableOutput(ns("low_coverage_table"))
                  )
           )
@@ -229,14 +292,14 @@ dataQualityUI <- function(id) {
       
       # Methodology Tab
       tabPanel(
-        "📋 Methodology",
+        "Methodology",
         icon = icon("book"),
         br(),
         fluidRow(
           column(12,
                  div(class = "section-card",
                      h3("Neighborhood Mapping Methodology"),
-                     div(style = "background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 1.8;",
+                     div(class = "methodology-box",
                          verbatimTextOutput(ns("methodology_text"))
                      )
                  )
@@ -302,9 +365,9 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
     # Topic Distribution Plot
     output$topic_plot <- renderPlot({
       ggplot(topic_counts(), aes(x = reorder(topic_match, article_count), y = article_count)) +
-        geom_col(fill = "#667eea", alpha = 0.8) +
+        geom_col(fill = "#dd5600", alpha = 0.9) +
         geom_text(aes(label = paste0(article_count, "\n(", percentage_label, ")")), 
-                  hjust = -0.1, size = 3.5) +
+                  hjust = -0.1, size = 3.5, family = "sans", color = "#333333") +
         coord_flip() +
         labs(
           title = "Article Distribution by Topic",
@@ -312,11 +375,15 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
           x = NULL,
           y = "Number of Articles"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 16),
-          plot.subtitle = element_text(size = 12, color = "gray40"),
-          axis.text = element_text(size = 11)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          plot.subtitle = element_text(size = 12, color = "#666666", family = "sans"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
@@ -348,20 +415,23 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         )
       
       ggplot(race_totals, aes(x = reorder(race_ethnicity, population), y = population)) +
-        geom_col(aes(fill = race_ethnicity), show.legend = FALSE) +
+        geom_col(fill = "#dd5600", alpha = 0.9) +
         geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
-                  hjust = -0.1, size = 4) +
+                  hjust = -0.1, size = 4, family = "sans", color = "#333333") +
         coord_flip() +
-        scale_fill_manual(values = c("#e74c3c", "#3498db", "#2ecc71", "#f39c12")) +
         labs(
           title = "Chicago Population by Race/Ethnicity",
           x = NULL,
           y = "Population"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text = element_text(size = 11)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
@@ -384,18 +454,22 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         )
       
       ggplot(age_totals, aes(x = age_group, y = population)) +
-        geom_col(fill = "#9b59b6", alpha = 0.8) +
+        geom_col(fill = "#ffa914", alpha = 0.9) +
         geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
-                  vjust = -0.5, size = 3.5) +
+                  vjust = -0.5, size = 3.5, family = "sans", color = "#333333") +
         labs(
           title = "Chicago Population by Age Group",
           x = "Age Group",
           y = "Population"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text = element_text(size = 11)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
@@ -420,18 +494,23 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         )
       
       ggplot(income_totals, aes(x = income_bracket, y = households)) +
-        geom_col(fill = "#efa8ff", alpha = 0.8) +
+        geom_col(fill = "#eec200", alpha = 0.9) +
         geom_text(aes(label = paste0(comma(households), "\n(", percentage_label, ")")), 
-                  vjust = -0.5, size = 3.5) +
+                  vjust = -0.5, size = 3.5, family = "sans", color = "#333333") +
         labs(
           title = "Chicago Households by Income Bracket",
           x = "Income Bracket",
           y = "Number of Households"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text.x = element_text(size = 10, angle = 15, hjust = 1)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.x = element_text(angle = 15, hjust = 1),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
@@ -444,17 +523,22 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         arrange(year_month)
       
       ggplot(articles_by_month, aes(x = year_month, y = article_count)) +
-        geom_line(color = "#667eea", size = 1) +
-        geom_point(color = "#667eea", size = 2) +
+        geom_line(color = "#dd5600", size = 1.5) +
+        geom_point(color = "#dd5600", size = 2.5) +
         labs(
           title = "Article Publication Trend Over Time",
           x = "Date",
           y = "Articles Published"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text = element_text(size = 11)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma) +
         scale_x_date(date_breaks = "6 months", date_labels = "%b %Y")
@@ -468,17 +552,22 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         arrange(year)
       
       ggplot(articles_by_year, aes(x = factor(year), y = article_count)) +
-        geom_col(fill = "#e67e22", alpha = 0.8) +
-        geom_text(aes(label = comma(article_count)), vjust = -0.5, size = 4) +
+        geom_col(fill = "#ffa914", alpha = 0.9) +
+        geom_text(aes(label = comma(article_count)), vjust = -0.5, size = 4, 
+                  family = "sans", color = "#333333") +
         labs(
           title = "Articles Published by Year",
           x = "Year",
           y = "Number of Articles"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text = element_text(size = 11)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 11, color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
@@ -500,18 +589,23 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
       mapping_summary() %>%
         top_n(20, article_count) %>%
         ggplot(aes(x = reorder(community, article_count), y = article_count)) +
-        geom_col(fill = "#efa8ff", alpha = 0.8) +
-        geom_text(aes(label = comma(article_count)), hjust = -0.1, size = 3) +
+        geom_col(fill = "#dd5600", alpha = 0.9) +
+        geom_text(aes(label = comma(article_count)), hjust = -0.1, size = 3, 
+                  family = "sans", color = "#333333") +
         coord_flip() +
         labs(
           title = "Top 20 Neighborhoods by Article Coverage",
           x = NULL,
           y = "Number of Articles"
         ) +
-        theme_minimal() +
+        theme_minimal(base_size = 13, base_family = "sans") +
         theme(
-          plot.title = element_text(face = "bold", size = 14),
-          axis.text = element_text(size = 10)
+          text = element_text(family = "sans", color = "#333333"),
+          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
+          axis.text = element_text(size = 10, color = "#666666"),
+          axis.title = element_text(color = "#333333", face = "bold"),
+          panel.grid.minor = element_blank(),
+          panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })

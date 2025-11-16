@@ -7,7 +7,13 @@ library(rvest)
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
-file.copy("data/my_openai_checkpoint.rds", "data/backup_checkpoint.rds")
+# file.copy("data/my_openai_checkpoint.rds", "data/backup_checkpoint_26890.rds")
+# 
+# final_check <- readRDS("data/my_openai_checkpoint.rds")
+# 
+# nrow (final_check)
+# 
+# View (final_check %>% slice_tail(n = 10))
 
 openai_api_key <- Sys.getenv("OPEN_AI_KEY")
 

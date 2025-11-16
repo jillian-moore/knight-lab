@@ -16,6 +16,8 @@ library(bslib)
 library(fontawesome)
 library(DT)
 library(base64enc)
+conflicts_prefer(shiny::dataTableOutput)
+conflicts_prefer(shiny::renderDataTable)
 
 # Encode logo ----
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))

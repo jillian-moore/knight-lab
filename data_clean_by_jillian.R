@@ -18,7 +18,8 @@ census <- read_csv(here("data/ACS_5_Year_Data_by_Community_Area_20251007.csv")) 
 chi_boundaries <- read_csv(here("data/chi_boundaries.csv")) |> 
   janitor::clean_names()
 
-ai_tags <- readRDS(here("data/topic_tag_1050.rds"))
+ai_tags <- readRDS(here("data/my_openai_checkpoint.rds")) |> 
+  select(id, topic_tag, topic_confidence)
 
 # census clean ----
 census_clean <- census |> 
@@ -286,13 +287,18 @@ topics <- c(
   "Politics", "Social Movements", "Sports & Recreation", "Transportation & Infrastructure"
 )
 
-api_clean <- api_clean |> 
-  mutate(
-    random_topic = sample(topics, size = n(), replace = TRUE)
-  )
+# api_clean <- api_clean |> 
+#   mutate(
+#     random_topic = sample(topics, size = n(), replace = TRUE)
+#   )
 
 # from AI
-
+api_clean <- api_clean |>
+  left_join(ai_tags, by = "id") |>
+  mutate(
+    topic_tag = replace_na(topic_tag, "Not yet run through AI"),
+    topic_confidence = replace_na(topic_confidence, 0)
+  )
 
 # merge files ----
 # shapefile and census merge (77 neighborhoods only)
@@ -319,7 +325,7 @@ api_long <- api_clean |>
 
 # keep individual article rows with dates (includes BOTH neighborhood and citywide)
 api_detail <- api_long |> 
-  select(community, random_topic, date, year, month, year_month)
+  select(community, topic_tag, topic_confidence, date, year, month, year_month)
 
 # get date range for slider
 date_range <- api_long |> 
@@ -330,7 +336,7 @@ date_range <- api_long |>
 
 # aggregate api data by community, topic, and date
 api_summary <- api_long |> 
-  group_by(community, random_topic, date) |> 
+  group_by(community, topic_tag, date) |> 
   summarise(article_count = n(), .groups = "drop")
 
 # get total articles by community with date info
@@ -409,7 +415,7 @@ full_data <- full_data |>
   mutate(
     total_articles = replace_na(total_articles, 0),
     article_count = replace_na(article_count, 0),
-    random_topic = replace_na(random_topic, "No Coverage")
+    topic_tag = replace_na(topic_tag, "No Coverage")
   )
 
 # add per person calculations
@@ -508,7 +514,7 @@ chi_boundaries_sf <- chi_boundaries_clean |>
 article_data <- api_detail |> 
   rename(
     article_date = date,
-    topic_match = random_topic
+    topic_match = topic_tag
   ) |> 
   select(community, topic_match, article_date, year, month, year_month)
 

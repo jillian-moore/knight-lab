@@ -62,7 +62,7 @@ ui <- fluidPage(
     ),
     
     navbarMenu(
-      "Tabs",
+      "Menu",
       icon = icon("chart-bar"),
       
       tabPanel(
@@ -73,7 +73,7 @@ ui <- fluidPage(
       ),
       
       tabPanel(
-        "Ward Comparison",
+        "Area Comparison",
         icon = icon("chart-line"),
         value = "comparison_tab",
         communityComparisonUI("comparison_tab")
@@ -87,7 +87,7 @@ ui <- fluidPage(
       ),
       
       tabPanel(
-        "About / Context",
+        "About",
         icon = icon("info-circle"),
         value = "context_tab",
         contextTabUI("context_tab")

@@ -572,12 +572,15 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
     output$stacked_bar <- renderPlot({
       req(bar_data())
       
+      # ColorBrewer YlOrRd palette with warm orange/yellow tones
+      topic_colors <- c("#a6cee3", "#ffff99", "#b2df8a", "#ff7f00", "#33a02c", 
+                        "#1f78b4", "#E31A1C", "#fb9a99", "#800026", "#fdbf6f", 
+                        "#6a3d9a", "#cab2d6")
+      
       ggplot(bar_data(), aes(x = factor(year), y = total, fill = random_topic)) +
         geom_bar(stat = "identity", position = "stack") +
         facet_wrap(~ community_label, ncol = 2) +
-        scale_fill_manual(values = c("#dd5600", "#00bf7d", "#eec200", "#5a3825", 
-                                     "#6633cc", "#c9ccc8", "#666666", "#333333",
-                                     "#f1ece4", "#ada8a0", "#ff8800", "#2196f3")) +
+        scale_fill_manual(values = topic_colors) +
         labs(
           x = "Year",
           y = "Number of Articles",

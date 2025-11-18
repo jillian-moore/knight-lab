@@ -469,7 +469,8 @@ contextTabUI <- function(id) {
                     tags$img(src = paste0("data:image/jpeg;base64,", eunice_img), alt = "Eunice Lee")
                   ),
                   div(class = "author-content",
-                      h3("Eunice Lee"),
+                      tags$a(href = "https://www.linkedin.com/in/eunicelee/", target = "_blank",
+                             h3("Eunice Lee")),
                       h4("Chief Intelligence Officer"),
                       p("Eunice is a junior at Northwestern University studying Journalism and Data Science. She is passionate about data-driven storytelling and survey research. She is especially interested in integrating technology and storytelling, and using creativity and multimedia reporting to bring insight to complicated issues."),
                       tags$ul(class = "list--social",

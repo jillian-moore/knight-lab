@@ -19,6 +19,7 @@ library(base64enc)
 
 conflicts_prefer(shiny::dataTableOutput)
 conflicts_prefer(shiny::renderDataTable)
+conflicts_prefer(dplyr::filter)
 
 # Encode logo ----
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))

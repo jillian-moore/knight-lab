@@ -25,69 +25,101 @@ write_csv(melissa, here("ai_check/melissa.csv"))
 write_csv(sophia, here("ai_check/sophia.csv"))
 
 # read in filled csv
-jillian_new <- read_csv(here("ai_check/jillian_new.csv"))
-keya_new <- read_csv(here("ai_check/keya_new.csv"))
-eunice_new <- read_csv(here("ai_check/eunice_new.csv"))
-sophia_new <- read_csv(here("ai_check/sophia_new.csv"))
-melissa_new <- read_csv(here("ai_check/melissa_new.csv"))
+jillian_new <- read_csv(here("ai_check/jillian_new.csv")) |> 
+  rename(human_topic_tag = my_topic)
+keya_new <- read_csv(here("ai_check/keya_new.csv")) |> 
+  rename(human_topic_tag = "Keya topic designation")
+eunice_new <- read_csv(here("ai_check/eunice_new.csv")) |> 
+  rename(human_topic_tag = ...3)
+sophia_new <- read_csv(here("ai_check/sophia_new.csv")) |> 
+  rename(human_topic_tag = ...3)
+melissa_new <- read_csv(here("ai_check/melissa_new.csv")) |> 
+  rename(human_topic_tag = ...3)
 
-# Function to stack CSVs, merge with original data, add match column, and calculate correlation
-merge_and_check_topics <- function(new_csv_paths, original_data, id_col = "id", 
-                                   new_topic_col = "new_topic", orig_topic_col = "topic") {
-  
-stacked_new <- map_dfr(new_csv_paths, read_csv)
-  
+# stack all new CSVs together
+stacked_new <- bind_rows(jillian_new, keya_new, sophia_new, eunice_new, melissa_new) |>
+  mutate(id = as.character(id))
+
 # merge with original data by ID
 merged <- stacked_new |>
-  left_join(ai_check_data |> select(all_of(c(id, topic_tag))),
-            by = id)
-  
-# Add match column (1 if topics match, 0 if not)
+  left_join(api_clean |> 
+              mutate(id = as.character(id)) |>
+              select(id, topic_tag, topic_confidence), 
+            by = "id")
+
+# normalize
 merged <- merged |>
-  mutate(match = if_else(
-    tolower(trimws(!!sym(new_topic_col))) == tolower(trimws(!!sym(orig_topic_col))),
-    1,
-    0
-    ))
-  
-  # Calculate correlation
-  # Remove any NAs for correlation calculation
-  valid_data <- merged |>
-    filter(!is.na(!!sym(new_topic_col)), 
-           !is.na(!!sym(orig_topic_col)),
-           !is.na(match))
-  
-  # Calculate match rate (proportion of matches)
-  match_rate <- mean(valid_data$match, na.rm = TRUE)
-  
-  # Print summary statistics
-  cat("Summary Statistics:\n")
-  cat("------------------\n")
-  cat("Total rows:", nrow(merged), "\n")
-  cat("Valid rows for correlation:", nrow(valid_data), "\n")
-  cat("Matches:", sum(valid_data$match), "\n")
-  cat("Mismatches:", sum(valid_data$match == 0), "\n")
-  cat("Match rate (correlation):", round(match_rate * 100, 2), "%\n\n")
-  
-  # Return merged dataset with match column
-  return(merged)
+  mutate(
+    confidence_zscore = (topic_confidence - mean(topic_confidence, na.rm = TRUE)) / 
+      sd(topic_confidence, na.rm = TRUE)
+  )
+
+# functions
+first_word  <- function(x) str_split(x, "\\s+", simplify = TRUE)[,1]
+second_word <- function(x) str_split(x, "\\s+", simplify = TRUE)[,2]
+
+normalize_topic <- function(x) {
+  x |>
+    tolower() |>
+    str_replace_all("\\band\\b", "&") |>
+    str_to_title() |>
+    trimws()
 }
 
-# Example usage:
-# new_files <- c(
-#   here("ai_check/jillian_new.csv"),
-#   here("ai_check/keya_new.csv"),
-#   here("ai_check/eunice_new.csv"),
-#   here("ai_check/sophia_new.csv"),
-#   here("ai_check/melissa_new.csv")
-# )
-# 
-# result <- merge_and_check_topics(new_files, api_clean)
-# 
-# # View results
-# result |> select(id, new_topic, topic, match) |> head()
-# 
-# # Write out if needed
-# write_csv(result, here("ai_check/merged_with_match.csv"))
+# standardize
+merged <- merged |>
+  mutate(
+    # normalize both
+    human_topic_tag = normalize_topic(human_topic_tag),
+    topic_tag_norm  = normalize_topic(topic_tag),
+    
+    # extract first words
+    human_first = first_word(human_topic_tag),
+    topic_first = first_word(topic_tag_norm),
+    
+    # if human only wrote the first word, replace with full topic_tag_norm
+    human_topic_tag = if_else(
+      human_first == topic_first &
+        str_count(human_topic_tag, "\\S+") == 1,
+      topic_tag_norm,
+      human_topic_tag
+    ),
+    
+    # final match check
+    match = if_else(human_topic_tag == topic_tag_norm, 1, 0)
+  )
 
-left_join()
+# add match column (1 if topics match, 0 if not)
+merged <- merged |>
+  mutate(match = if_else(
+    tolower(trimws(human_topic_tag)) == tolower(trimws(topic_tag)),
+    1,
+    0
+  ))
+  
+# calculate match rate (proportion of matches)
+match_rate <- mean(merged$match, na.rm = TRUE)
+
+# calculate relevant facts between match and ai_topic_confidence
+summary(glm(match ~ confidence_zscore, data = merged, family = binomial))
+
+# summary
+cat("Match rate:", round(match_rate * 100, 2), "%\n")
+cat("Total matches:", sum(merged$match, na.rm = TRUE), "\n")
+cat("Total rows:", nrow(merged), "\n")
+cat("Correlation (match vs ai_topic_confidence):", round(correlation, 3), "\n")
+
+
+ggplot(merged, aes(x = as.factor(match), y = topic_confidence, fill = as.factor(match))) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(alpha = 0.5) +
+  scale_fill_manual(values = c("0" = "#e74c3c", "1" = "#2ecc71"),
+                    labels = c("No Match", "Match")) +
+  labs(
+    title = "AI Confidence by Match Status",
+    x = "Match with Human Tag",
+    y = "AI Topic Confidence",
+    fill = "Result"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom")

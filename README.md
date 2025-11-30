@@ -13,6 +13,8 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 -   [data/](./data/): contains all data for this project; note that api_scrape.rds can be obtained by running `1_data_clean.R` and ai_check_data.R can be obtained by running `3_ai_check.R`. We did not commit these files to the repo as they are over 100 MB.
 -   [ai_check_data/](./ai_check_data/): contains the randomly assigned and completed CSV files for analysis of AI and human alignment on topic tagging. Please run `4_ai_check.R` to see data visualizations and printed output of our results.
 -   [modules/](./modules/): contains our Shiny dashboard, with each tab of the dashboard coded in a module. Please run `1_data_clean` to load the appropriate data into your environment, and then run `app.R` to quickly load and view the dashboard.
+-   [www/](./www/): contains images rendered in our Shiny dashboard.
+-   [reference/](./reference/): contains R scripts which we abandoned as we created additional iterations of our project. However, we believe these scripts could be a helpful starting point for replication of this prototype for publications with different structures.
 
 #### R scripts
 

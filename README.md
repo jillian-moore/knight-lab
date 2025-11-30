@@ -1,8 +1,10 @@
 # Knight Lab: Local News Lens
 
-Welcome! We are a group of journalism students at Northwestern University, and we completed this project as part of the Knight Lab at the Medill School of Journalism.
+Welcome! We are a group of journalism students at Northwestern University, and we completed this project as part of the [Knight Lab](https://knightlab.northwestern.edu/) at the Medill School of Journalism.
 
-This repo is now maintained by the Knight Lab. For questions, please call (847) 467-4971.
+The authors of this repo are Jillian Moore, Eunice Lee, Sophia Zhang, Melissa Dai and Keya Chaudhuri. This is a prototype completed for [Block Club Chicago](https://blockclubchicago.org/) under the supervision of Professor Jill Blackman.
+
+This repo is now maintained by the Knight Lab. We encourage adaptation and further development of this prototype for journalistic publications. For questions, please call (847) 467-4971.
 
 ### What's in the repo
 

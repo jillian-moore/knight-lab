@@ -16,6 +16,7 @@ library(bslib)
 library(fontawesome)
 library(DT)
 library(base64enc)
+library(conflicted)
 
 conflicts_prefer(shiny::dataTableOutput)
 conflicts_prefer(shiny::renderDataTable)

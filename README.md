@@ -21,6 +21,7 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 
 -   `1_api_scrape`: contains a function to scrape the REST API of Block Club Chicago.
 -   `2_data_clean.R`: contains detailed code to clean, merge and save out the API scrape, census, and geo data.
+-   `3_ai_tags.R`: contains code to run initial large dataset through open LLM key; automation for dataset updates can be done with free LLMs.
 -   `4_ai_check.R`: contains analysis of the [ai_check_data/](./ai_check_data/) experiment, where we each independently selected topics for randomly assigned articles to compare human and AI judgement.
 -   `5_local_hosting.R`: contains code to deploy dashboard to URL through shinyapps.io.
 -   `app.R`: contains code to run the Shiny dashboard.

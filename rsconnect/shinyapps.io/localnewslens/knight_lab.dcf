@@ -1,0 +1,10 @@
+name: knight_lab
+title:
+username: localnewslens
+account: localnewslens
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 16200540
+bundleId: 11253986
+url: https://localnewslens.shinyapps.io/knight_lab/
+version: 1

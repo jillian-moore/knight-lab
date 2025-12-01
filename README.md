@@ -24,5 +24,5 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 
 #### Final Artifact
 
--   `Moore_Jillian_final_report.qmd`: file for creating final artifact
--   `Moore_Jillian_final_report.html`: rendered html version of final artifact
+-   `final_artifact.qmd`: file for creating final artifact
+-   `final_artifact.html`: rendered html version of final artifact

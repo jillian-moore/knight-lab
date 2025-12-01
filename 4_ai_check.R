@@ -1,11 +1,12 @@
-# AI CHECKER
+# AI CHECKER ----
 
+# load packages ----
 library(tidyverse)
 
 # load data ----
 load(here("data/ai_check_data.rda"))
 
-# separate datasets of randomly assigned topics
+# separate datasets of randomly assigned topics ----
 eunice <- api_clean |> slice_sample(n = 10) |> 
   select(id, content.rendered)
 keya <- api_clean |> slice_sample(n = 10) |> 
@@ -24,7 +25,7 @@ write_csv(jillian, here("ai_check/jillian.csv"))
 write_csv(melissa, here("ai_check/melissa.csv"))
 write_csv(sophia, here("ai_check/sophia.csv"))
 
-# read in filled csv
+# read in filled csv ----
 jillian_new <- read_csv(here("ai_check/jillian_new.csv")) |> 
   rename(human_topic_tag = my_topic)
 keya_new <- read_csv(here("ai_check/keya_new.csv")) |> 
@@ -36,11 +37,11 @@ sophia_new <- read_csv(here("ai_check/sophia_new.csv")) |>
 melissa_new <- read_csv(here("ai_check/melissa_new.csv")) |> 
   rename(human_topic_tag = ...3)
 
-# stack all new CSVs together
+# stack all new CSVs together ----
 stacked_new <- bind_rows(jillian_new, keya_new, sophia_new, eunice_new, melissa_new) |>
   mutate(id = as.character(id))
 
-# merge with original data by ID
+# merge with original data by ID ----
 merged <- stacked_new |>
   left_join(api_clean |> 
               mutate(id = as.character(id)) |>
@@ -54,7 +55,7 @@ merged <- merged |>
       sd(topic_confidence, na.rm = TRUE)
   )
 
-# functions
+# functions ----
 first_word  <- function(x) str_split(x, "\\s+", simplify = TRUE)[,1]
 second_word <- function(x) str_split(x, "\\s+", simplify = TRUE)[,2]
 
@@ -66,7 +67,7 @@ normalize_topic <- function(x) {
     trimws()
 }
 
-# standardize
+# standardize ----
 merged <- merged |>
   mutate(
     # normalize both
@@ -103,13 +104,13 @@ match_rate <- mean(merged$match, na.rm = TRUE)
 # calculate relevant facts between match and ai_topic_confidence
 summary(glm(match ~ confidence_zscore, data = merged, family = binomial))
 
-# summary
+# summary ----
 cat("Match rate:", round(match_rate * 100, 2), "%\n")
 cat("Total matches:", sum(merged$match, na.rm = TRUE), "\n")
 cat("Total rows:", nrow(merged), "\n")
 cat("Correlation (match vs ai_topic_confidence):", round(correlation, 3), "\n")
 
-
+# helpful visualization ----
 ggplot(merged, aes(x = as.factor(match), y = topic_confidence, fill = as.factor(match))) +
   geom_boxplot(alpha = 0.7) +
   geom_jitter(alpha = 0.5) +

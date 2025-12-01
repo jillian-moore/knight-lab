@@ -1,4 +1,4 @@
-# DATA QUALITY CHECK MODULE ----
+# DATA QUALITY CHECK - MODULE 3 ----
 
 # UI ----
 dataQualityUI <- function(id) {
@@ -121,15 +121,58 @@ dataQualityUI <- function(id) {
         .nav-pills > li.active > a:focus {
           background-color: #dd5600;
         }
-        .methodology-box {
-          background: #f1f3f2;
-          padding: 20px;
+        .methodology-section {
+          background: white;
+          padding: 25px;
           border-radius: 0;
-          font-family: 'Courier New', monospace;
-          font-size: 13px;
-          line-height: 1.8;
-          border-left: 4px solid #dd5600;
-          white-space: pre-wrap;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+          border: 1px solid #c9ccc8;
+          margin-bottom: 20px;
+        }
+        .methodology-section h3 {
+          color: #dd5600;
+          font-size: 20px;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          margin-top: 0;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #f1f3f2;
+          padding-bottom: 10px;
+        }
+        .methodology-section h4 {
+          color: #333333;
+          font-size: 16px;
+          font-weight: 700;
+          font-family: 'Lato', sans-serif;
+          margin-top: 25px;
+          margin-bottom: 12px;
+        }
+        .methodology-section p {
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #333333;
+          margin-bottom: 15px;
+        }
+        .methodology-section ul {
+          font-family: 'Lato', sans-serif;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #333333;
+          margin-left: 20px;
+          margin-bottom: 15px;
+        }
+        .methodology-section li {
+          margin-bottom: 8px;
+        }
+        .methodology-highlight {
+          background: #fff8e1;
+          padding: 15px 20px;
+          border-left: 4px solid #eec200;
+          margin: 20px 0;
+        }
+        .methodology-highlight strong {
+          color: #dd5600;
         }
       "))
     ),
@@ -137,8 +180,8 @@ dataQualityUI <- function(id) {
     # Title panel
     div(class = "title-panel",
         div(class = "title-text",
-            h2("Data Quality Dashboard"),
-            p("Comprehensive validation and analysis of Chicago community data")
+            h2("Data Quality"),
+            p("Summary statistics of Chicago community area data")
         )
     ),
     
@@ -170,137 +213,133 @@ dataQualityUI <- function(id) {
       )
     ),
     
-    # Tab Panel for Different Sections
+    # tab panel for different sections
     tabsetPanel(
       type = "pills",
       
-      # Topic Distribution Tab
+      # Topic Distribution
       tabPanel(
         "Topic Distribution",
         icon = icon("tags"),
         br(),
         fluidRow(
           column(12,
-                 div(class = "section-card",
-                     h3("Article Distribution by Topic"),
-                     div(class = "plot-container",
-                         plotOutput(ns("topic_plot"), height = "500px")
-                     ),
-                     br(),
-                     dataTableOutput(ns("topic_table"))
+                 div(class = "control-section",
+                     h4("Article Distribution by Topic"),
+                     plotOutput(ns("topic_plot"), height = "500px")
                  )
           )
         )
       ),
       
-      # Census Demographics Tab
+      # Census Demographics
       tabPanel(
         "Demographics",
         icon = icon("users"),
         br(),
         fluidRow(
           column(6,
-                 div(class = "section-card",
-                     h3("Race/Ethnicity Distribution"),
-                     div(class = "plot-container",
-                         plotOutput(ns("race_plot"), height = "400px")
-                     )
+                 div(class = "control-section",
+                     h4("Race/Ethnicity Distribution"),
+                     plotOutput(ns("race_plot"), height = "400px")
                  )
           ),
           column(6,
-                 div(class = "section-card",
-                     h3("Age Distribution"),
-                     div(class = "plot-container",
-                         plotOutput(ns("age_plot"), height = "400px")
-                     )
+                 div(class = "control-section",
+                     h4("Age Distribution"),
+                     plotOutput(ns("age_plot"), height = "400px")
                  )
           )
         ),
         fluidRow(
           column(12,
-                 div(class = "section-card",
-                     h3("Income Distribution"),
-                     div(class = "plot-container",
-                         plotOutput(ns("income_plot"), height = "400px")
-                     )
+                 div(class = "control-section",
+                     h4("Income Distribution"),
+                     plotOutput(ns("income_plot"), height = "400px")
                  )
           )
         )
       ),
       
-      # Publication Trends Tab
+      # Publication Trends
       tabPanel(
         "Publication Trends",
         icon = icon("chart-line"),
         br(),
         fluidRow(
           column(12,
-                 div(class = "section-card",
-                     h3("Article Publication Timeline"),
-                     div(class = "plot-container",
-                         plotOutput(ns("timeline_plot"), height = "400px")
-                     )
+                 div(class = "control-section",
+                     h4("Article Publication Timeline"),
+                     plotOutput(ns("timeline_plot"), height = "400px")
                  )
           )
         ),
         fluidRow(
           column(12,
-                 div(class = "section-card",
-                     h3("Articles by Year"),
-                     div(class = "plot-container",
-                         plotOutput(ns("year_plot"), height = "400px")
-                     ),
-                     br(),
-                     dataTableOutput(ns("year_table"))
+                 div(class = "control-section",
+                     h4("Articles by Year"),
+                     plotOutput(ns("year_plot"), height = "400px")
                  )
           )
         )
       ),
       
-      # Neighborhood Coverage Tab
+      # Neighborhood Coverage
       tabPanel(
         "Neighborhood Coverage",
         icon = icon("map-marked-alt"),
         br(),
         fluidRow(
           column(12,
-                 div(class = "section-card",
-                     h3("Top 20 Neighborhoods by Article Coverage"),
-                     div(class = "plot-container",
-                         plotOutput(ns("neighborhood_plot"), height = "500px")
-                     )
-                 )
-          )
-        ),
-        fluidRow(
-          column(6,
-                 div(class = "section-card",
-                     h3("Top Covered Neighborhoods"),
-                     dataTableOutput(ns("top_neighborhoods_table"))
-                 )
-          ),
-          column(6,
-                 div(class = "section-card",
-                     h3("Low Coverage Neighborhoods"),
-                     p("Communities with fewer than 10 articles:", 
-                       style = "color: #666666; font-size: 14px; font-family: 'Lato', sans-serif;"),
-                     dataTableOutput(ns("low_coverage_table"))
+                 div(class = "control-section",
+                     h4("Top 20 Neighborhoods by Article Coverage"),
+                     plotOutput(ns("neighborhood_plot"), height = "600px")
                  )
           )
         )
       ),
       
-      # Methodology Tab
+      # Methodology
       tabPanel(
         "Methodology",
         icon = icon("book"),
         br(),
         fluidRow(
           column(12,
-                 div(class = "section-card",
+                 div(class = "methodology-section",
                      h3("Neighborhood Mapping Methodology"),
-                     div(class = "methodology-box",
-                         verbatimTextOutput(ns("methodology_text"))
+                     
+                     p("This analysis maps Block Club Chicago articles to Chicago's 77 official community areas using a hierarchical matching system that ensures accurate geographic attribution."),
+                     
+                     h4("Matching Process"),
+                     
+                     p(strong("1. Primary Matching")),
+                     tags$ul(
+                       tags$li("Extract lead text before em-dash/hyphen in article content"),
+                       tags$li("Match against mapping table of Block Club Chicago neighborhoods to census community areas"),
+                       tags$li("If match found, use ONLY this neighborhood for article location")
+                     ),
+                     
+                     p(strong("2. Secondary Matching")),
+                     tags$ul(
+                       tags$li("If no primary match, parse section from site navigation"),
+                       tags$li("Check each section against mapping table"),
+                       tags$li("Use ALL matching neighborhoods from section")
+                     ),
+                     
+                     p(strong("3. Tertiary Matching")),
+                     tags$ul(
+                       tags$li("If still no match, parse category field (tagged by reporters)"),
+                       tags$li("Check each category tags against mapping table"),
+                       tags$li("Use ALL matching neighborhoods from category tags")
+                     ),
+                     
+                     div(class = "methodology-highlight",
+                         p(strong("4. Default Assignment")),
+                         tags$ul(
+                           tags$li("If no matches found, assign to 'Citywide' category"),
+                           tags$li("This would ideally capture stories with citywide significance")
+                         )
                      )
                  )
           )
@@ -314,7 +353,7 @@ dataQualityUI <- function(id) {
 dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
   moduleServer(id, function(input, output, session) {
     
-    # Prepare census summary data
+    # prepare census summary data
     census_summary <- reactive({
       chi_boundaries_sf %>%
         st_drop_geometry() %>%
@@ -326,9 +365,10 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         distinct(community, .keep_all = TRUE)
     })
     
-    # Topic counts
+    # topic counts - include Citywide, exclude "Not yet run through AI"
     topic_counts <- reactive({
       article_data %>%
+        filter(topic_match != "Not yet run through AI") %>%
         count(topic_match, name = "article_count") %>%
         arrange(desc(article_count)) %>%
         mutate(
@@ -337,21 +377,22 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         )
     })
     
-    # Mapping summary
+    # mapping summary - exclude chicago/citywide from community count
     mapping_summary <- reactive({
       article_data %>%
+        filter(!community %in% c("chicago", "citywide")) %>%
         group_by(community) %>%
         summarise(article_count = n(), .groups = "drop") %>%
         arrange(desc(article_count))
     })
     
-    # Summary Metrics
+    # summary metrics
     output$total_articles <- renderText({
       format(nrow(article_data), big.mark = ",")
     })
     
     output$total_communities <- renderText({
-      nrow(mapping_summary())
+      "77"  # Fixed to show 77
     })
     
     output$total_population <- renderText({
@@ -359,10 +400,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
     })
     
     output$topics_tracked <- renderText({
-      length(unique(article_data$topic_match))
+      article_data %>%
+        filter(topic_match != "Not yet run through AI") %>%
+        pull(topic_match) %>%
+        unique() %>%
+        length()
     })
     
-    # Topic Distribution Plot
+    # topic distribution plot
     output$topic_plot <- renderPlot({
       ggplot(topic_counts(), aes(x = reorder(topic_match, article_count), y = article_count)) +
         geom_col(fill = "#dd5600", alpha = 0.9) +
@@ -370,17 +415,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
                   hjust = -0.1, size = 3.5, family = "sans", color = "#333333") +
         coord_flip() +
         labs(
-          title = "Article Distribution by Topic",
-          subtitle = paste0("Total Articles: ", format(sum(topic_counts()$article_count), big.mark = ",")),
           x = NULL,
           y = "Number of Articles"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
-          plot.subtitle = element_text(size = 12, color = "#666666", family = "sans"),
           axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.y = element_text(face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
@@ -388,18 +430,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
     
-    output$topic_table <- renderDataTable({
-      topic_counts() %>%
-        select(Topic = topic_match, 
-               `Article Count` = article_count, 
-               Percentage = percentage_label) %>%
-        datatable(
-          options = list(pageLength = 12, dom = 't'),
-          rownames = FALSE
-        )
-    })
-    
-    # Race/Ethnicity Plot
+    # race/ethnicity plot
     output$race_plot <- renderPlot({
       race_totals <- census_summary() %>%
         summarise(
@@ -420,15 +451,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
                   hjust = -0.1, size = 4, family = "sans", color = "#333333") +
         coord_flip() +
         labs(
-          title = "Chicago Population by Race/Ethnicity",
           x = NULL,
           y = "Population"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.y = element_text(face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
@@ -458,15 +488,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         geom_text(aes(label = paste0(comma(population), "\n(", percentage_label, ")")), 
                   vjust = -0.5, size = 3.5, family = "sans", color = "#333333") +
         labs(
-          title = "Chicago Population by Age Group",
           x = "Age Group",
           y = "Population"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.x = element_text(face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
@@ -474,7 +503,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
     
-    # Income Distribution Plot
+    # income distribution plot
     output$income_plot <- renderPlot({
       income_totals <- census_summary() %>%
         summarise(
@@ -498,16 +527,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         geom_text(aes(label = paste0(comma(households), "\n(", percentage_label, ")")), 
                   vjust = -0.5, size = 3.5, family = "sans", color = "#333333") +
         labs(
-          title = "Chicago Households by Income Bracket",
           x = "Income Bracket",
           y = "Number of Households"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 11, color = "#666666"),
-          axis.text.x = element_text(angle = 15, hjust = 1),
+          axis.text.x = element_text(angle = 15, hjust = 1, face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
@@ -515,7 +542,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
     
-    # Timeline Plot
+    # timeline plot
     output$timeline_plot <- renderPlot({
       articles_by_month <- article_data %>%
         mutate(year_month = floor_date(article_date, "month")) %>%
@@ -526,14 +553,12 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         geom_line(color = "#dd5600", size = 1.5) +
         geom_point(color = "#dd5600", size = 2.5) +
         labs(
-          title = "Article Publication Trend Over Time",
           x = "Date",
           y = "Articles Published"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 11, color = "#666666"),
           axis.text.x = element_text(angle = 45, hjust = 1),
           axis.title = element_text(color = "#333333", face = "bold"),
@@ -544,7 +569,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         scale_x_date(date_breaks = "6 months", date_labels = "%b %Y")
     })
     
-    # Year Plot
+    # year plot
     output$year_plot <- renderPlot({
       articles_by_year <- article_data %>%
         mutate(year = year(article_date)) %>%
@@ -556,15 +581,14 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         geom_text(aes(label = comma(article_count)), vjust = -0.5, size = 4, 
                   family = "sans", color = "#333333") +
         labs(
-          title = "Articles Published by Year",
           x = "Year",
           y = "Number of Articles"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 11, color = "#666666"),
+          axis.text.x = element_text(face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
@@ -572,19 +596,7 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
     })
     
-    output$year_table <- renderDataTable({
-      article_data %>%
-        mutate(year = year(article_date)) %>%
-        count(year, name = "article_count") %>%
-        arrange(desc(year)) %>%
-        datatable(
-          options = list(pageLength = 10, dom = 't'),
-          rownames = FALSE,
-          colnames = c("Year", "Article Count")
-        )
-    })
-    
-    # Neighborhood Coverage Plot
+    # neighborhood coverage plot
     output$neighborhood_plot <- renderPlot({
       mapping_summary() %>%
         top_n(20, article_count) %>%
@@ -594,82 +606,19 @@ dataQualityServer <- function(id, chi_boundaries_sf, article_data) {
                   family = "sans", color = "#333333") +
         coord_flip() +
         labs(
-          title = "Top 20 Neighborhoods by Article Coverage",
           x = NULL,
           y = "Number of Articles"
         ) +
         theme_minimal(base_size = 13, base_family = "sans") +
         theme(
           text = element_text(family = "sans", color = "#333333"),
-          plot.title = element_text(family = "serif", face = "bold", size = 16, color = "#333333"),
           axis.text = element_text(size = 10, color = "#666666"),
+          axis.text.y = element_text(face = "bold"),
           axis.title = element_text(color = "#333333", face = "bold"),
           panel.grid.minor = element_blank(),
           panel.grid.major = element_line(color = "#f1f3f2")
         ) +
         scale_y_continuous(labels = comma, expand = expansion(mult = c(0, 0.15)))
-    })
-    
-    output$top_neighborhoods_table <- renderDataTable({
-      mapping_summary() %>%
-        head(15) %>%
-        mutate(community = str_to_title(community)) %>%
-        datatable(
-          options = list(pageLength = 15, dom = 't'),
-          rownames = FALSE,
-          colnames = c("Community", "Article Count")
-        )
-    })
-    
-    output$low_coverage_table <- renderDataTable({
-      mapping_summary() %>%
-        filter(article_count < 10) %>%
-        mutate(community = str_to_title(community)) %>%
-        datatable(
-          options = list(pageLength = 10, dom = 't'),
-          rownames = FALSE,
-          colnames = c("Community", "Article Count")
-        )
-    })
-    
-    # Methodology Text
-    output$methodology_text <- renderText({
-      paste(
-        "NEIGHBORHOOD MAPPING METHODOLOGY",
-        "=================================",
-        "",
-        "This analysis maps Block Club Chicago articles to Chicago's 77 official",
-        "community areas using a hierarchical matching system:",
-        "",
-        "1. PRIMARY MATCHING (Sub-community field):",
-        "   - Extract lead text before em-dash/hyphen in article content",
-        "   - Match against neighborhood mapping table",
-        "   - If match found, use ONLY this neighborhood",
-        "",
-        "2. SECONDARY MATCHING (Article Sections):",
-        "   - If no primary match, parse parsely.meta.articleSection field",
-        "   - Check each section against mapping table",
-        "   - Collect ALL matching neighborhoods",
-        "",
-        "3. TERTIARY MATCHING (Primary Category):",
-        "   - If still no match, parse slp_primary_category.name field",
-        "   - Check each category against mapping table",
-        "   - Collect ALL matching neighborhoods",
-        "",
-        "4. DEFAULT ASSIGNMENT:",
-        "   - If no matches found, assign to 'chicago' (citywide)",
-        "",
-        "MULTI-NEIGHBORHOOD ARTICLES:",
-        "- Articles can be assigned to multiple neighborhoods (up to 3)",
-        "- This captures stories that span multiple communities",
-        "- Each assignment is stored in separate columns",
-        "",
-        paste0("DATA QUALITY SUMMARY:"),
-        paste0("- Total neighborhoods mapped: ", nrow(mapping_summary())),
-        paste0("- Total articles: ", format(nrow(article_data), big.mark = ",")),
-        paste0("- Avg articles per neighborhood: ", round(mean(mapping_summary()$article_count))),
-        sep = "\n"
-      )
     })
   })
 }

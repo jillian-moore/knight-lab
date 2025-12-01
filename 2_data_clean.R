@@ -1,12 +1,12 @@
 # CLEANING THE DATA ----
 
-# packages ----
+# load packages ----
 library(tidyverse)
 library(here)
 library(conflicted)
 library(sf)
 
-# conflicts ----
+# handle conflicts ----
 conflicts_prefer(dplyr::filter)
 
 # read in all data ----

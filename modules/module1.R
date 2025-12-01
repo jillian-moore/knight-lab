@@ -1,4 +1,4 @@
-# DATA VIZ - MODULE 1
+# DATA VIZ - MODULE 1 ----
 
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
@@ -251,12 +251,12 @@ mapExplorerUI <- function(id) {
       "))
     ),
     
-    # Title panel with logo
+    # title panel with logo
     div(class = "title-panel",
         tags$img(src = sprintf("data:image/jpeg;base64,%s", logo_base64), style = "height: 60px; width: auto;"),
         div(class = "title-text",
-            h2("Chicago Community Map Explorer"),
-            p("Explore news coverage patterns across Chicago neighborhoods")
+            h2("Chicago News Lens"),
+            p("Explore news coverage patterns across Chicago community areas")
         )
     ),
     
@@ -317,12 +317,12 @@ mapExplorerUI <- function(id) {
   )
 }
 
-# server ----
+# SERVER ----
 mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range, 
                               topics, demo_choices, on_compare_click) {
   moduleServer(id, function(input, output, session) {
     
-    # Helper function to find predominant category
+    # helper function to find predominant category
     find_predominant <- function(values, labels) {
       if (all(is.na(values)) || all(values == 0)) {
         return(list(label = "N/A", value = 0))
@@ -362,7 +362,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
     filtered_topic_data <- reactive({
       req(input$date_range_slider, input$blue_var)
       
-      # Use TRUE as default if include_citywide is not yet initialized
+      # use TRUE as default if include_citywide is not yet initialized
       include_citywide <- isTRUE(input$include_citywide)
       
       df <- article_data
@@ -498,7 +498,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           })
         }
       } else if (input$blue_var != "None" && (input$demo_var == "None")) {
-        # Blue gradient: complementary light to dark
+        # blue gradient: complementary light to dark
         fill_colors <- sapply(1:n, function(i) {
           intensity <- blue_intensity[i]
           if (intensity == 0) return("#f1f3f2")
@@ -509,7 +509,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var == "None" && input$demo_var != "None") {
-        # Yellow gradient: tertiary light to dark
+        # yellow gradient: tertiary light to dark
         fill_colors <- sapply(1:n, function(i) {
           intensity <- yellow_intensity[i]
           if (intensity == 0) return("#f1f3f2")
@@ -531,17 +531,17 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           blue_weight <- blue_val / total
           
           if(blue_weight > 0.6) {
-            # More blue - cyan tones
+            # more blue - cyan tones
             r <- round(173 + (0 - 173) * avg_intensity)
             g <- round(216 + (150 - 216) * avg_intensity)
             b <- round(230 + (136 - 230) * avg_intensity)
           } else if(blue_weight < 0.4) {
-            # More yellow - warm green
+            # more yellow - warm green
             r <- round(200 + (139 - 200) * avg_intensity)
             g <- round(220 + (195 - 220) * avg_intensity)
             b <- round(150 + (74 - 150) * avg_intensity)
           } else {
-            # Balanced - secondary green (#00bf7d)
+            # balanced - secondary green (#00bf7d)
             r <- round(180 + (0 - 180) * avg_intensity)
             g <- round(220 + (191 - 220) * avg_intensity)
             b <- round(200 + (125 - 200) * avg_intensity)
@@ -588,7 +588,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         row_data <- map_data[i, ]
         community_name <- row_data$community
         
-        # Find predominant categories
+        # find predominant categories
         race_values <- c(
           row_data$white, 
           row_data$black_or_african_american, 
@@ -698,7 +698,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         )
     })
     
-    # Handle popup compare button clicks
+    # handle popup compare button clicks
     observeEvent(input$popup_compare_click, {
       req(input$popup_compare_click)
       if (!is.null(on_compare_click)) {
@@ -706,9 +706,9 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
       }
     })
     
-    # Render dynamic legend based on selections
+    # render dynamic legend based on selections
     output$map_legend <- renderUI({
-      # Only show legend when both topic and demographic are selected
+      # only show legend when both topic and demographic are selected
       if (input$blue_var != "None" && input$demo_var != "None") {
         div(class = "map-legend",
             div(class = "legend-title", "Coverage Ratio"),

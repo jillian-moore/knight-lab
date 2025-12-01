@@ -1,4 +1,4 @@
-# MAKE DASHBOARD URL ACCESSIBLE
+# MAKE DASHBOARD URL ACCESSIBLE ----
 
 # install necessary packages ----
 install.packages("curl")
@@ -8,9 +8,9 @@ install.packages('rsconnect')
 # deploy app ----
 rsconnect::deployApp(
   appFiles = c(
+    "app.R",
     "modules/",
-    "data/",     
-    "www/"    
-  ),
-  appName = "knight_lab"
+    "data/",
+    "www/"
+  )
 )

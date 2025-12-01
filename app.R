@@ -1,6 +1,6 @@
 # MAIN DASHBOARD ----
 
-# Load packages ----
+# load packages ----
 library(shiny)
 library(leaflet)
 library(sf)
@@ -18,17 +18,18 @@ library(DT)
 library(base64enc)
 library(conflicted)
 
+# handle conflicts ----
 conflicts_prefer(shiny::dataTableOutput)
 conflicts_prefer(shiny::renderDataTable)
 conflicts_prefer(dplyr::filter)
 
-# Encode logo ----
+# encode logo ----
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
-# Load data ----
+# load data ----
 load(here("data/full_data.rda"))
 
-# Source modules ----
+# source modules ----
 source(here("modules/module1.R"))   # mapExplorerUI / Server
 source(here("modules/module2.R"))   # communityComparisonUI / Server
 source(here("modules/module3.R"))   # dataQualityUI / Server
@@ -37,7 +38,7 @@ source(here("modules/module4.R"))   # contextTabUI / Server
 # UI ----
 ui <- fluidPage(
   
-  # Global custom CSS ----
+  # global custom CSS ----
   tags$head(
     tags$style(HTML("
       .navbar-brand img {
@@ -101,7 +102,7 @@ ui <- fluidPage(
 # SERVER ----
 server <- function(input, output, session) {
   
-  # Reactive value for selected ward
+  # reactive value for selected ward
   selected_ward1 <- reactiveVal(NULL)
   
   # Map Explorer Module
@@ -135,9 +136,9 @@ server <- function(input, output, session) {
   # Context / About Tab Module
   contextTabServer("context_tab")
   
-  # Optional: Suppress legacy DT warnings
+  # suppress legacy DT warnings
   options(shiny.legacy.datatable = FALSE)
 }
 
-# RUN APP ----
+# run app ----
 shinyApp(ui, server)

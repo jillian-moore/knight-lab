@@ -2,7 +2,7 @@
 title: "Knight Lab: Local News Lens"
 subtitle: |
   | Final Artifact 
-author: "Jillian Moore, Eunice Lee, Sophia Zhang, Melissa Dai and Keya Chaudhuri"
+authors: "Jillian Moore, Eunice Lee, Sophia Zhang, Melissa Dai and Keya Chaudhuri"
 pagetitle: "Final Artifact"
 date: today
 
@@ -19,43 +19,13 @@ reference-location: margin
 citation-location: margin
 ---
 
-::: {.callout-tip icon=false}
-
-## Github Repo Link
+::: {.callout-tip icon="false"}
+## Github Repo
 
 [Local News Lens Repo](https://github.com/jillian-moore/knight-lab)
 
+*Please refer to the repo's README for descriptions of each directory and R script.*
 :::
-
-```{r}
-#| label: load-pkg-data-hidden
-#| echo: false
-#| results: 'hide'
-
-# load extra packages ----
-library(here)
-library(kableExtra)
-library(vip)
-
-# load helper functions ----
-source(here("r_scripts/1.5_helper_functions.R"))
-
-# handle conflicts
-tidymodels_prefer()
-
-# load necessary results ----
-paths <- list.files(path = here("results/"), pattern = "*.rda", full.names = TRUE)
-for (path in paths){
-  load(path)
-}
-
-# clean up space
-rm(path, paths)
-
-# load necessary objects
-load(here("data/animals.rda"))
-load(here("data/animals_eda_sample.rda"))
-```
 
 # Framing Narrative
 
@@ -63,36 +33,52 @@ load(here("data/animals_eda_sample.rda"))
 
 # Visual & Technical Documentation
 
-# Reflective Analysis
-
-# Design & Presentation
+#### Visual Documentation
 
 ![Image example](path/image.png){#fig-caption}
 
+#### Technical Documentation
+
 ```{r}
-#| label: tbl-top-predictors
+#| label: area-map
 #| tbl-cap: Predictive power of feature variables 
 #| echo: false
+#| eval: false
 
-# checking predictive power of variables ----
-# using vip with tidymodels workflow
-importance_plot <- vip(bt_final_fit)
-
-# extract data for table
-importance_data <- vip::vi(bt_final_fit)
-importance_table <- importance_data |> 
-  rename(Feature = Variable) |> 
-  mutate(Importance = round(Importance, 4)) |> 
-  arrange(desc(Importance)) |>
-  slice_head(n = 10)
-
-# create the table
-top_predictors <- importance_table |> 
-  kable(
-    col.names = c("Feature", "Relative Importance (%)")
-  ) |> 
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
-
-top_predictors
 ```
 
+```{r}
+#| label: location-fxn
+#| tbl-cap: Predictive power of feature variables 
+#| echo: false
+#| eval: false
+
+```
+
+```{r}
+#| label: merge
+#| tbl-cap: Predictive power of feature variables 
+#| echo: false
+#| eval: false
+
+```
+
+```{r}
+#| label: ai-tags
+#| tbl-cap: Predictive power of feature variables 
+#| echo: false
+#| eval: false
+
+```
+
+```{r}
+#| label: map-color
+#| tbl-cap: Predictive power of feature variables 
+#| echo: false
+#| eval: false
+
+```
+
+# Reflective Analysis
+
+# Design & Presentation

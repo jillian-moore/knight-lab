@@ -5,6 +5,6 @@ account: localnewslens
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 16200540
-bundleId: 11254012
+bundleId: 11254160
 url: https://localnewslens.shinyapps.io/knight_lab/
 version: 1

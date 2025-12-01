@@ -1,11 +1,10 @@
-# MODULE 4: CONTEXT TAB
-# About Us and Research Context
+# ABOUT & CONTEXT - MODULE 4 ----
 
 # UI ----
 contextTabUI <- function(id) {
   ns <- NS(id)
   
-  # Encode images to base64
+  # encode images to base64
   melissa_img <- base64enc::base64encode(here::here("www/melissa headshot.jpeg"))
   jillian_img <- base64enc::base64encode(here::here("www/jillian headshot.jpeg"))
   sophia_img <- base64enc::base64encode(here::here("www/sophia headshot.jpeg"))
@@ -338,7 +337,7 @@ contextTabUI <- function(id) {
     ),
     
     div(class = "context-container",
-        # Hero Section
+        # hero section
         div(class = "hero-section",
             h1("Local News Lens"),
             div(class = "hero-grid",
@@ -357,7 +356,7 @@ contextTabUI <- function(id) {
             )
         ),
         
-        # Research Context Section (moved before bios)
+        # research context section (moved before bios)
         div(class = "research-section",
             p("With the Local News Lens, our goal was to create a tool grounded in data and reporting trends to help newsrooms identify real coverage gaps. Our initial partnership with Block Club Chicago rooted the project within the city's unique media landscape, but the patterns we found — underreporting and overreporting across neighborhoods — reflect challenges faced by newsrooms everywhere, from big cities to small towns."),
             
@@ -389,7 +388,7 @@ contextTabUI <- function(id) {
               p("Passionate journalists and technologists working to improve local news equity")
           ),
           
-          # First Row: Melissa, Jillian, Sophia
+          # first Row: Melissa, Jillian, Sophia
           div(class = "bio-grid",
               # Melissa Dai
               div(class = "author-bio--card",
@@ -444,7 +443,7 @@ contextTabUI <- function(id) {
               )
           ),
           
-          # Second Row: Keya, Eunice, Jill
+          # second Row: Keya, Eunice, Jill
           div(class = "bio-grid",
               # Keya Chaudhuri
               div(class = "author-bio--card",
@@ -505,6 +504,5 @@ contextTabUI <- function(id) {
 # SERVER ----
 contextTabServer <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # No server logic needed for static content
   })
 }

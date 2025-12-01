@@ -1,4 +1,4 @@
-# WARD COMPARISON - MODULE 2
+# COMMUNITY AREA COMPARISON - MODULE 2 ----
 
 logo_base64 <- base64enc::base64encode(here("www/lnllogowhiterectangle.jpeg"))
 
@@ -133,15 +133,15 @@ communityComparisonUI <- function(id) {
       "))
     ),
     
-    # Title panel with correct logo
+    # title panel with correct logo
     div(class = "title-panel",
         div(class = "title-text",
             h2("Chicago Community Area Comparison"),
-            p("Compare news coverage and demographics between two Chicago neighborhoods")
+            p("Compare news coverage and demographics between two Chicago community areas")
         )
     ),
     
-    # Community selectors
+    # community selectors
     fluidRow(
       column(6,
              div(class = "community-selector-card",
@@ -163,7 +163,7 @@ communityComparisonUI <- function(id) {
       )
     ),
     
-    # Charts
+    # charts
     fluidRow(
       column(6,
              div(class = "control-section",
@@ -201,7 +201,7 @@ communityComparisonUI <- function(id) {
 communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(NULL)) {
   moduleServer(id, function(input, output, session) {
     
-    # Helper to find predominant category
+    # helper to find predominant category
     find_predominant <- function(values, labels) {
       if (all(is.na(values)) || all(values == 0)) {
         return(list(label = "N/A", value = 0))
@@ -210,7 +210,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       list(label = labels[max_idx], value = values[max_idx])
     }
     
-    # Initialize community options
+    # initialize community options
     observe({
       community_choices <- sort(unique(full_data$community))
       names(community_choices) <- stringr::str_to_title(community_choices)
@@ -229,7 +229,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
                         selected = community_choices[min(2, length(community_choices))])
     })
     
-    # Reactive ward data
+    # reactive ward data
     ward_data <- reactive({
       req(input$ward1, input$ward2)
       
@@ -272,7 +272,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
           total_articles = sum(article_count, na.rm = TRUE),
           .groups = "drop"
         ) %>%
-        # Maintain selection order
+        # maintain selection order
         mutate(order = case_when(
           community == input$ward1 ~ 1,
           community == input$ward2 ~ 2,
@@ -281,7 +281,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
         arrange(order)
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # Create stat card for community 1
+    # create stat card for community 1
     output$stat_card1 <- renderUI({
       req(census_summary())
       stats <- census_summary()
@@ -289,7 +289,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       if (nrow(stats) < 1) return(NULL)
       stats_row <- stats[1, ]
       
-      # Find predominant categories
+      # find predominant categories
       race_values <- c(
         stats_row$white, 
         stats_row$black_or_african_american, 
@@ -358,7 +358,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       if (nrow(stats) < 2) return(NULL)
       stats_row <- stats[2, ]
       
-      # Find predominant categories
+      # find predominant categories
       race_values <- c(
         stats_row$white, 
         stats_row$black_or_african_american, 
@@ -461,14 +461,14 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
         )
     }) %>% bindCache(input$ward1, input$ward2)
     
-    # Population pyramid data
+    # population pyramid data
     pyramid_data <- reactive({
       req(census_summary(), input$pyramid_type)
       
       stats <- census_summary()
       
       if (input$pyramid_type == "age") {
-        # Age distribution
+        # age distribution
         data.frame(
           community = rep(stats$community_label, each = 6),
           category = rep(c("0-17", "18-24", "25-34", "35-49", "50-64", "65+"), times = nrow(stats)),
@@ -481,7 +481,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
           stringsAsFactors = FALSE
         )
       } else if (input$pyramid_type == "race") {
-        # Race distribution
+        # race distribution
         data.frame(
           community = rep(stats$community_label, each = 5),
           category = rep(c("White", "Black", "Asian", "Hispanic", "Other"), times = nrow(stats)),
@@ -498,7 +498,7 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
           stringsAsFactors = FALSE
         )
       } else {
-        # Income distribution
+        # income distribution
         data.frame(
           community = rep(stats$community_label, each = 5),
           category = rep(c("Under $25K", "$25K-$50K", "$50K-$75K", "$75K-$125K", "$125K+"), times = nrow(stats)),
@@ -520,16 +520,16 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       
       pyr_data <- pyramid_data()
       
-      # Get the two community names in order
+      # get the two community names in order
       communities <- unique(pyr_data$community)
       
-      # Make first community negative (left), second positive (right)
+      # make first community negative (left), second positive (right)
       pyr_data <- pyr_data %>%
         mutate(
           plot_value = ifelse(community == communities[1], -abs(value), abs(value))
         )
       
-      # Find max value for x-axis limits
+      # find max value for x-axis limits
       max_val <- max(abs(pyr_data$value), na.rm = TRUE)
       
       ggplot(pyr_data, aes(x = plot_value, y = category, fill = community)) +
@@ -564,20 +564,21 @@ communityComparisonServer <- function(id, full_data, selected_ward1 = reactive(N
       req(ward_data())
       
       ward_data() %>%
-        filter(random_topic != "No Coverage") %>%
-        group_by(community_label, year, random_topic) %>%
+        filter(topic_tag != "No Coverage", 
+               topic_tag != "Not yet run through AI") %>%  # Add this line
+        group_by(community_label, year, topic_tag) %>%
         summarise(total = sum(article_count, na.rm = TRUE), .groups = "drop")
     }) %>% bindCache(input$ward1, input$ward2)
     
     output$stacked_bar <- renderPlot({
       req(bar_data())
       
-      # ColorBrewer YlOrRd palette with warm orange/yellow tones
+      # add one more color
       topic_colors <- c("#a6cee3", "#ffff99", "#b2df8a", "#ff7f00", "#33a02c", 
                         "#1f78b4", "#E31A1C", "#fb9a99", "#800026", "#fdbf6f", 
-                        "#6a3d9a", "#cab2d6")
+                        "#6a3d9a", "#cab2d6", "#b15928")  # Added brown color
       
-      ggplot(bar_data(), aes(x = factor(year), y = total, fill = random_topic)) +
+      ggplot(bar_data(), aes(x = factor(year), y = total, fill = topic_tag)) +
         geom_bar(stat = "identity", position = "stack") +
         facet_wrap(~ community_label, ncol = 2) +
         scale_fill_manual(values = topic_colors) +

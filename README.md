@@ -10,7 +10,7 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 
 #### Sub-folders/directories
 
--   [data/](./data/): contains all data for this project; note that api_scrape.rds can be obtained by running `1_data_clean.R` and ai_check_data.R can be obtained by running `3_ai_check.R`. We did not commit these files to the repo as they are over 100 MB.
+-   [data/](./data/): contains all data for this project; note that api_scrape.rds can be obtained by running `1_api_scrape.R` and ai_check_data.R can be obtained by running `3_ai_check.R`. We did not commit these files to the repo as they are over 100 MB.
 -   [ai_check_data/](./ai_check_data/): contains the randomly assigned and completed CSV files for analysis of AI and human alignment on topic tagging. Please run `4_ai_check.R` to see data visualizations and printed output of our results.
 -   [modules/](./modules/): contains each tab of the Shiny dashboard coded in a module. Please run `1_data_clean` to load the appropriate data into your environment, and then run `app.R` to quickly load and view the dashboard.
 -   [www/](./www/): contains images rendered in our Shiny dashboard.
@@ -19,7 +19,7 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 
 #### R scripts
 
--   `1_api_scrape`: contains a function to scrape the REST API of Block Club Chicago.
+-   `1_api_scrape`: contains functions to scrape the REST API of Block Club Chicago.
 -   `2_data_clean.R`: contains detailed code to clean, merge and save out the API scrape, census, and geo data.
 -   `3_ai_tags.R`: contains code to run initial large dataset through open LLM key; automation for dataset updates can be done with free LLMs.
 -   `4_ai_check.R`: contains analysis of the [ai_check_data/](./ai_check_data/) experiment, where we each independently selected topics for randomly assigned articles to compare human and AI judgement.

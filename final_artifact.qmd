@@ -28,6 +28,7 @@ citation-location: margin
 :::
 
 # Framing Narrative
+Type a sentence. 
 
 # Collaborative Process Reflection
 
@@ -42,9 +43,9 @@ citation-location: margin
 ```{r}
 #| label: area-map
 #| tbl-cap: Predictive power of feature variables 
-#| echo: false
 #| eval: false
 
+print("hello")
 ```
 
 ```{r}

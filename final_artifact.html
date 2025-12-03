@@ -3165,8 +3165,796 @@ Figure 1: Image example
 </section>
 <section id="technical-documentation" class="level4">
 <h4 class="anchored" data-anchor-id="technical-documentation">Technical Documentation</h4>
-<div class="cell" data-tbl-cap="Predictive power of feature variables">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">&quot;hello&quot;</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># /wp-json/wp/v2/posts</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># scrape the REST API ----</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>get_all_posts <span class="ot">&lt;-</span> <span class="cf">function</span>(base_url, <span class="at">per_page =</span> <span class="dv">100</span>, <span class="at">max_pages =</span> <span class="dv">1000</span>, <span class="at">start_page =</span> <span class="dv">1</span>) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  all_posts <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(page <span class="cf">in</span> start_page<span class="sc">:</span>max_pages) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    url <span class="ot">&lt;-</span> <span class="fu">paste0</span>(base_url, <span class="st">&quot;/wp-json/wp/v2/posts?per_page=&quot;</span>, per_page, <span class="st">&quot;&amp;page=&quot;</span>, page)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># timeout: 20 minutes</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    res <span class="ot">&lt;-</span> <span class="fu">GET</span>(url, <span class="fu">timeout</span>(<span class="dv">1200</span>))</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># stop if request fails</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">status_code</span>(res) <span class="sc">!=</span> <span class="dv">200</span>) <span class="cf">break</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    posts <span class="ot">&lt;-</span> <span class="fu">fromJSON</span>(<span class="fu">content</span>(res, <span class="st">&quot;text&quot;</span>, <span class="at">encoding =</span> <span class="st">&quot;UTF-8&quot;</span>), <span class="at">flatten =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># stop if no posts returned</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="fu">length</span>(posts) <span class="sc">==</span> <span class="dv">0</span>) <span class="cf">break</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># convert all columns to character to avoid binding issues</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    posts[] <span class="ot">&lt;-</span> <span class="fu">lapply</span>(posts, as.character)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    all_posts[[page]] <span class="ot">&lt;-</span> posts</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cat</span>(<span class="st">&quot;Fetched page&quot;</span>, page, <span class="st">&quot;with&quot;</span>, <span class="fu">nrow</span>(posts), <span class="st">&quot;posts</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># save point every 10 pages</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(page <span class="sc">%%</span> <span class="dv">10</span> <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>      temp_df <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(all_posts)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>      <span class="fu">saveRDS</span>(temp_df, <span class="fu">here</span>(<span class="st">&quot;data&quot;</span>, <span class="fu">paste0</span>(<span class="st">&quot;checkpoint_page_&quot;</span>, page, <span class="st">&quot;.rds&quot;</span>)))</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">&quot;Saved checkpoint at page&quot;</span>, page, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bind_rows</span>(all_posts)</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="co"># call fxn ----</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>all_posts_df <span class="ot">&lt;-</span> <span class="fu">get_all_posts</span>(<span class="st">&quot;https://blockclubchicago.org&quot;</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(all_posts_df, <span class="fu">here</span>(<span class="st">&quot;data&quot;</span>, <span class="st">&quot;api_scrape.rds&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># flattened neighborhood mapping</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>neighborhood_mapping <span class="ot">&lt;-</span> <span class="fu">tribble</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>sub_community, <span class="sc">~</span>chi_community,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Citywide</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Citywide&quot;</span>, <span class="st">&quot;Chicago&quot;</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Chicago&quot;</span>, <span class="st">&quot;Chicago&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># West Side</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Austin&quot;</span>, <span class="st">&quot;Austin&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Austin&quot;</span>, <span class="st">&quot;West Garfield Park&quot;</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Austin&quot;</span>, <span class="st">&quot;East Garfield Park&quot;</span>,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Broadview&quot;</span>, <span class="st">&quot;Austin&quot;</span>,</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Garfield Park&quot;</span>, <span class="st">&quot;West Garfield Park&quot;</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Garfield Park&quot;</span>, <span class="st">&quot;East Garfield Park&quot;</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Lawndale&quot;</span>, <span class="st">&quot;North Lawndale&quot;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Lawndale&quot;</span>, <span class="st">&quot;South Lawndale&quot;</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Little Village&quot;</span>, <span class="st">&quot;South Lawndale&quot;</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Lawn&quot;</span>, <span class="st">&quot;West Lawn&quot;</span>,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Loop&quot;</span>, <span class="st">&quot;Near West Side&quot;</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Near West Side&quot;</span>, <span class="st">&quot;Near West Side&quot;</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Humboldt Park&quot;</span>, <span class="st">&quot;Humboldt Park&quot;</span>,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Town&quot;</span>, <span class="st">&quot;West Town&quot;</span>,</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Wicker Park&quot;</span>, <span class="st">&quot;West Town&quot;</span>,</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bucktown&quot;</span>, <span class="st">&quot;West Town&quot;</span>,</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Lower West Side&quot;</span>, <span class="st">&quot;Lower West Side&quot;</span>,</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Pilsen&quot;</span>, <span class="st">&quot;Lower West Side&quot;</span>,</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>  <span class="co"># North Side</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Rogers Park&quot;</span>, <span class="st">&quot;Rogers Park&quot;</span>,</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Edgewater&quot;</span>, <span class="st">&quot;Edgewater&quot;</span>,</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Uptown&quot;</span>, <span class="st">&quot;Uptown&quot;</span>,</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bowmanville&quot;</span>, <span class="st">&quot;Lincoln Square&quot;</span>,</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Lincoln Square&quot;</span>, <span class="st">&quot;Lincoln Square&quot;</span>,</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Andersonville&quot;</span>, <span class="st">&quot;Lincoln Square&quot;</span>,</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Ravenswood&quot;</span>, <span class="st">&quot;Lincoln Square&quot;</span>,</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Center&quot;</span>, <span class="st">&quot;North Center&quot;</span>,</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Ravenswood&quot;</span>, <span class="st">&quot;North Center&quot;</span>,</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Roscoe Village&quot;</span>, <span class="st">&quot;North Center&quot;</span>,</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Lake View&quot;</span>, <span class="st">&quot;Lake View&quot;</span>,</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Lakeview&quot;</span>, <span class="st">&quot;Lake View&quot;</span>,</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Wrigleyville&quot;</span>, <span class="st">&quot;Lake View&quot;</span>,</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Northalsted&quot;</span>, <span class="st">&quot;Lake View&quot;</span>,</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Lincoln Park&quot;</span>, <span class="st">&quot;Lincoln Park&quot;</span>,</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Old Town&quot;</span>, <span class="st">&quot;Lincoln Park&quot;</span>,</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Near North Side&quot;</span>, <span class="st">&quot;Near North Side&quot;</span>,</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;River North&quot;</span>, <span class="st">&quot;Near North Side&quot;</span>,</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Gold Coast&quot;</span>, <span class="st">&quot;Near North Side&quot;</span>,</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Edison Park&quot;</span>, <span class="st">&quot;Edison Park&quot;</span>,</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Norwood Park&quot;</span>, <span class="st">&quot;Norwood Park&quot;</span>,</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Jefferson Park&quot;</span>, <span class="st">&quot;Jefferson Park&quot;</span>,</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Forest Glen&quot;</span>, <span class="st">&quot;Forest Glen&quot;</span>,</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Park&quot;</span>, <span class="st">&quot;North Park&quot;</span>,</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Albany Park&quot;</span>, <span class="st">&quot;Albany Park&quot;</span>,</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Portage Park&quot;</span>, <span class="st">&quot;Portage Park&quot;</span>,</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Irving Park&quot;</span>, <span class="st">&quot;Irving Park&quot;</span>,</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Dunning&quot;</span>, <span class="st">&quot;Dunning&quot;</span>,</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Montclare&quot;</span>, <span class="st">&quot;Montclare&quot;</span>,</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Belmont Cragin&quot;</span>, <span class="st">&quot;Belmont Cragin&quot;</span>,</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Hermosa&quot;</span>, <span class="st">&quot;Hermosa&quot;</span>,</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Avondale&quot;</span>, <span class="st">&quot;Avondale&quot;</span>,</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Logan Square&quot;</span>, <span class="st">&quot;Logan Square&quot;</span>,</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Northwest Side</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;O&#39;Hare&quot;</span>, <span class="st">&quot;O&#39;Hare&quot;</span>,</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Edgebrook&quot;</span>, <span class="st">&quot;Edgebrook&quot;</span>,</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Sauganash&quot;</span>, <span class="st">&quot;Sauganash&quot;</span>,</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Central</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Loop&quot;</span>, <span class="st">&quot;Loop&quot;</span>,</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;City Hall&quot;</span>, <span class="st">&quot;Loop&quot;</span>,</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Downtown&quot;</span>, <span class="st">&quot;Loop&quot;</span>,</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Loop&quot;</span>, <span class="st">&quot;Loop&quot;</span>,</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Near South Side&quot;</span>, <span class="st">&quot;Near South Side&quot;</span>,</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Loop&quot;</span>, <span class="st">&quot;Near South Side&quot;</span>,</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Armour Square&quot;</span>, <span class="st">&quot;Armour Square&quot;</span>,</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Chinatown&quot;</span>, <span class="st">&quot;Armour Square&quot;</span>,</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Douglas&quot;</span>, <span class="st">&quot;Douglas&quot;</span>,</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Oakland&quot;</span>, <span class="st">&quot;Oakland&quot;</span>,</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Fuller Park&quot;</span>, <span class="st">&quot;Fuller Park&quot;</span>,</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Grand Boulevard&quot;</span>, <span class="st">&quot;Grand Boulevard&quot;</span>,</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bronzeville&quot;</span>, <span class="st">&quot;Grand Boulevard&quot;</span>,</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Kenwood&quot;</span>, <span class="st">&quot;Kenwood&quot;</span>,</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bronzeville&quot;</span>, <span class="st">&quot;Kenwood&quot;</span>,</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Washington Park&quot;</span>, <span class="st">&quot;Washington Park&quot;</span>,</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bronzeville&quot;</span>, <span class="st">&quot;Washington Park&quot;</span>,</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Hyde Park&quot;</span>, <span class="st">&quot;Hyde Park&quot;</span>,</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Woodlawn&quot;</span>, <span class="st">&quot;Woodlawn&quot;</span>,</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>  <span class="co"># South Side</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Bridgeport&quot;</span>, <span class="st">&quot;Bridgeport&quot;</span>,</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;McKinley Park&quot;</span>, <span class="st">&quot;McKinley Park&quot;</span>,</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Brighton Park&quot;</span>, <span class="st">&quot;Brighton Park&quot;</span>,</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Archer Heights&quot;</span>, <span class="st">&quot;Archer Heights&quot;</span>,</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Gage Park&quot;</span>, <span class="st">&quot;Gage Park&quot;</span>,</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Clearing&quot;</span>, <span class="st">&quot;Clearing&quot;</span>,</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Elsdon&quot;</span>, <span class="st">&quot;West Elsdon&quot;</span>,</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Garfield Ridge&quot;</span>, <span class="st">&quot;Garfield Ridge&quot;</span>,</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Back of the Yards&quot;</span>, <span class="st">&quot;New City&quot;</span>,</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Englewood&quot;</span>, <span class="st">&quot;West Englewood&quot;</span>,</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Englewood&quot;</span>, <span class="st">&quot;Englewood&quot;</span>,</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Greater Grand Crossing&quot;</span>, <span class="st">&quot;Greater Grand Crossing&quot;</span>,</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Ashburn&quot;</span>, <span class="st">&quot;Ashburn&quot;</span>,</span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Auburn Gresham&quot;</span>, <span class="st">&quot;Auburn Gresham&quot;</span>,</span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Beverly&quot;</span>, <span class="st">&quot;Beverly&quot;</span>,</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Washington Heights&quot;</span>, <span class="st">&quot;Washington Heights&quot;</span>,</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Mount Greenwood&quot;</span>, <span class="st">&quot;Mount Greenwood&quot;</span>,</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Morgan Park&quot;</span>, <span class="st">&quot;Morgan Park&quot;</span>,</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Chatham&quot;</span>, <span class="st">&quot;Chatham&quot;</span>,</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Avalon Park&quot;</span>, <span class="st">&quot;Avalon Park&quot;</span>,</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Shore&quot;</span>, <span class="st">&quot;South Shore&quot;</span>,</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Chicago&quot;</span>, <span class="st">&quot;South Chicago&quot;</span>,</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Burnside&quot;</span>, <span class="st">&quot;Burnside&quot;</span>,</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Calumet Heights&quot;</span>, <span class="st">&quot;Calumet Heights&quot;</span>,</span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Roseland&quot;</span>, <span class="st">&quot;Roseland&quot;</span>,</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Pullman&quot;</span>, <span class="st">&quot;Pullman&quot;</span>,</span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Deering&quot;</span>, <span class="st">&quot;South Deering&quot;</span>,</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;East Side&quot;</span>, <span class="st">&quot;East Side&quot;</span>,</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Pullman&quot;</span>, <span class="st">&quot;West Pullman&quot;</span>,</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Riverdale&quot;</span>, <span class="st">&quot;Riverdale&quot;</span>,</span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Hegewisch&quot;</span>, <span class="st">&quot;Hegewisch&quot;</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>    <span class="at">sub_community =</span> <span class="fu">str_to_lower</span>(<span class="fu">str_trim</span>(sub_community)), </span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>    <span class="at">chi_community =</span> <span class="fu">str_to_lower</span>(<span class="fu">str_trim</span>(chi_community))  </span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>chi_communities <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Rogers Park&quot;</span>, <span class="st">&quot;West Ridge&quot;</span>, <span class="st">&quot;Uptown&quot;</span>, <span class="st">&quot;Lincoln Square&quot;</span>, </span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Center&quot;</span>, <span class="st">&quot;Lake View&quot;</span>, <span class="st">&quot;Lincoln Park&quot;</span>, <span class="st">&quot;Near North Side&quot;</span>, </span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Edison Park&quot;</span>, <span class="st">&quot;Norwood Park&quot;</span>, <span class="st">&quot;Jefferson Park&quot;</span>, <span class="st">&quot;Forest Glen&quot;</span>, </span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Park&quot;</span>, <span class="st">&quot;Albany Park&quot;</span>, <span class="st">&quot;Portage Park&quot;</span>, <span class="st">&quot;Irving Park&quot;</span>, </span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Dunning&quot;</span>, <span class="st">&quot;Montclare&quot;</span>, <span class="st">&quot;Belmont Cragin&quot;</span>, <span class="st">&quot;Hermosa&quot;</span>, </span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Avondale&quot;</span>, <span class="st">&quot;Logan Square&quot;</span>, <span class="st">&quot;Humboldt Park&quot;</span>, <span class="st">&quot;West Town&quot;</span>, </span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Austin&quot;</span>, <span class="st">&quot;West Garfield Park&quot;</span>, <span class="st">&quot;East Garfield Park&quot;</span>, <span class="st">&quot;Near West Side&quot;</span>,</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;North Lawndale&quot;</span>, <span class="st">&quot;South Lawndale&quot;</span>, <span class="st">&quot;Lower West Side&quot;</span>, <span class="st">&quot;Loop&quot;</span>, </span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Near South Side&quot;</span>, <span class="st">&quot;Armour Square&quot;</span>, <span class="st">&quot;Douglas&quot;</span>, <span class="st">&quot;Oakland&quot;</span>, </span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Fuller Park&quot;</span>, <span class="st">&quot;Grand Boulevard&quot;</span>, <span class="st">&quot;Kenwood&quot;</span>, <span class="st">&quot;Washington Park&quot;</span>, </span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Hyde Park&quot;</span>, <span class="st">&quot;Woodlawn&quot;</span>, <span class="st">&quot;South Shore&quot;</span>, <span class="st">&quot;Chatham&quot;</span>, <span class="st">&quot;Avalon Park&quot;</span>,</span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;South Chicago&quot;</span>, <span class="st">&quot;Burnside&quot;</span>, <span class="st">&quot;Calumet Heights&quot;</span>, <span class="st">&quot;Roseland&quot;</span>, </span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Pullman&quot;</span>, <span class="st">&quot;South Deering&quot;</span>, <span class="st">&quot;East Side&quot;</span>, <span class="st">&quot;West Pullman&quot;</span>, </span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Riverdale&quot;</span>, <span class="st">&quot;Hegewisch&quot;</span>, <span class="st">&quot;Garfield Ridge&quot;</span>, <span class="st">&quot;Archer Heights&quot;</span>, </span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Brighton Park&quot;</span>, <span class="st">&quot;McKinley Park&quot;</span>, <span class="st">&quot;Bridgeport&quot;</span>, <span class="st">&quot;New City&quot;</span>, </span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Elsdon&quot;</span>, <span class="st">&quot;Gage Park&quot;</span>, <span class="st">&quot;Clearing&quot;</span>, <span class="st">&quot;West Lawn&quot;</span>, <span class="st">&quot;Chicago Lawn&quot;</span>, </span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Englewood&quot;</span>, <span class="st">&quot;Englewood&quot;</span>, <span class="st">&quot;Greater Grand Crossing&quot;</span>, </span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Ashburn&quot;</span>, <span class="st">&quot;Auburn Gresham&quot;</span>, <span class="st">&quot;Beverly&quot;</span>, <span class="st">&quot;Washington Heights&quot;</span>, </span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Mount Greenwood&quot;</span>, <span class="st">&quot;Morgan Park&quot;</span>, <span class="st">&quot;Jeffery Manor&quot;</span>, <span class="st">&quot;East Morgan Park&quot;</span>, </span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;West Morgan Park&quot;</span></span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># match neighborhoods row by row using our mapping</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>api_clean <span class="ot">&lt;-</span> api_clean <span class="sc">|&gt;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">sub_community =</span> <span class="fu">str_to_lower</span>(<span class="fu">str_trim</span>(sub_community)),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">article_section_split =</span> <span class="fu">str_split</span>(parsely.meta.articleSection, <span class="st">&quot;,</span><span class="sc">\\</span><span class="st">s*&quot;</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary_category_split =</span> <span class="fu">str_split</span>(slp_primary_category.name, <span class="st">&quot;,</span><span class="sc">\\</span><span class="st">s*&quot;</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">|&gt;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">matched_neighborhoods =</span> <span class="fu">list</span>({</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>      <span class="co"># empty vector to store matched neighborhoods</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      matches <span class="ot">&lt;-</span> <span class="fu">character</span>()</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>      <span class="co"># does sub_community field match a neighborhood?</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(sub_community) <span class="sc">&amp;&amp;</span> sub_community <span class="sc">!=</span> <span class="st">&quot;&quot;</span>) {</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        current_sub <span class="ot">&lt;-</span> sub_community</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># look up sub_community in neighborhood_mapping</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        sub_matches <span class="ot">&lt;-</span> neighborhood_mapping <span class="sc">|&gt;</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>          <span class="fu">filter</span>(sub_community <span class="sc">==</span> current_sub <span class="sc">|</span> chi_community <span class="sc">==</span> current_sub) <span class="sc">|&gt;</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>          <span class="fu">pull</span>(chi_community) <span class="sc">|&gt;</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>          <span class="fu">unique</span>()</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        <span class="co"># if matches found, ONLY use these</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="fu">length</span>(sub_matches) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>          matches <span class="ot">&lt;-</span> sub_matches</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>      <span class="co"># if no sub_community match, check ALL items in article sections</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">length</span>(matches) <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="fu">length</span>(article_section_split) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(article_section_split[[<span class="dv">1</span>]])) {</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        sections_clean <span class="ot">&lt;-</span> <span class="fu">str_to_lower</span>(<span class="fu">str_trim</span>(article_section_split[[<span class="dv">1</span>]]))</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>        sections_clean <span class="ot">&lt;-</span> sections_clean[<span class="sc">!</span><span class="fu">is.na</span>(sections_clean) <span class="sc">&amp;</span> sections_clean <span class="sc">!=</span> <span class="st">&quot;&quot;</span>]</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="co"># loop through EACH section and collect ALL matches</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (section <span class="cf">in</span> sections_clean) {</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>          section_matches <span class="ot">&lt;-</span> neighborhood_mapping <span class="sc">|&gt;</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>            <span class="fu">filter</span>(sub_community <span class="sc">==</span> section <span class="sc">|</span> chi_community <span class="sc">==</span> section) <span class="sc">|&gt;</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>            <span class="fu">pull</span>(chi_community) <span class="sc">|&gt;</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>            <span class="fu">unique</span>()</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>          matches <span class="ot">&lt;-</span> <span class="fu">c</span>(matches, section_matches)</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>      <span class="co"># if still no matches, check ALL items in primary category</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="fu">length</span>(matches) <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="fu">length</span>(primary_category_split) <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> <span class="sc">!</span><span class="fu">is.null</span>(primary_category_split[[<span class="dv">1</span>]])) {</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        categories_clean <span class="ot">&lt;-</span> <span class="fu">str_to_lower</span>(<span class="fu">str_trim</span>(primary_category_split[[<span class="dv">1</span>]]))</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        categories_clean <span class="ot">&lt;-</span> categories_clean[<span class="sc">!</span><span class="fu">is.na</span>(categories_clean) <span class="sc">&amp;</span> categories_clean <span class="sc">!=</span> <span class="st">&quot;&quot;</span>]</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>        <span class="co"># loop through EACH category and collect ALL matches</span></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (category <span class="cf">in</span> categories_clean) {</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>          category_matches <span class="ot">&lt;-</span> neighborhood_mapping <span class="sc">|&gt;</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>            <span class="fu">filter</span>(sub_community <span class="sc">==</span> category <span class="sc">|</span> chi_community <span class="sc">==</span> category) <span class="sc">|&gt;</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>            <span class="fu">pull</span>(chi_community) <span class="sc">|&gt;</span></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>            <span class="fu">unique</span>()</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>          matches <span class="ot">&lt;-</span> <span class="fu">c</span>(matches, category_matches)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>      <span class="co"># return all unique matches found</span></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>      <span class="fu">unique</span>(matches)</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co"># add separate neighborhood columns</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>api_clean <span class="ot">&lt;-</span> api_clean <span class="sc">|&gt;</span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">neighborhood1 =</span> <span class="fu">map_chr</span>(matched_neighborhoods, <span class="sc">~</span>{<span class="cf">if</span>(<span class="fu">length</span>(.x) <span class="sc">&gt;=</span> <span class="dv">1</span>) .x[<span class="dv">1</span>] <span class="cf">else</span> <span class="cn">NA_character_</span>}),</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">neighborhood2 =</span> <span class="fu">map_chr</span>(matched_neighborhoods, <span class="sc">~</span>{<span class="cf">if</span>(<span class="fu">length</span>(.x) <span class="sc">&gt;=</span> <span class="dv">2</span>) .x[<span class="dv">2</span>] <span class="cf">else</span> <span class="cn">NA_character_</span>}),</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>    <span class="at">neighborhood3 =</span> <span class="fu">map_chr</span>(matched_neighborhoods, <span class="sc">~</span>{<span class="cf">if</span>(<span class="fu">length</span>(.x) <span class="sc">&gt;=</span> <span class="dv">3</span>) .x[<span class="dv">3</span>] <span class="cf">else</span> <span class="cn">NA_character_</span>})</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">neighborhood1 =</span> <span class="fu">replace_na</span>(neighborhood1, <span class="st">&quot;chicago&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># merge files ----</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># shapefile and census merge (77 neighborhoods only)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>chi_boundaries_clean <span class="ot">&lt;-</span> chi_boundaries <span class="sc">|&gt;</span> </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(community, the_geom, area_num_1, shape_area, shape_len) <span class="sc">|&gt;</span> </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(census_clean, <span class="at">by =</span> <span class="st">&quot;community&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">community =</span> <span class="fu">str_to_lower</span>(community))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># pivot api longer and prepare date</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>api_long <span class="ot">&lt;-</span> api_clean <span class="sc">|&gt;</span> </span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">date =</span> <span class="fu">as.Date</span>(date),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">year =</span> <span class="fu">year</span>(date),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">month =</span> <span class="fu">month</span>(date),</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">year_month =</span> <span class="fu">floor_date</span>(date, <span class="st">&quot;month&quot;</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">cols =</span> <span class="fu">starts_with</span>(<span class="st">&quot;neighborhood&quot;</span>),</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">names_to =</span> <span class="st">&quot;neighborhood_col&quot;</span>,</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">values_to =</span> <span class="st">&quot;community&quot;</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(community) <span class="sc">&amp;</span> community <span class="sc">!=</span> <span class="st">&quot;&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>neighborhood_col)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="co"># keep individual article rows with dates (includes BOTH neighborhood and citywide)</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>api_detail <span class="ot">&lt;-</span> api_long <span class="sc">|&gt;</span> </span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(community, topic_tag, topic_confidence, date, year, month, year_month)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="co"># get date range for slider</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>date_range <span class="ot">&lt;-</span> api_long <span class="sc">|&gt;</span> </span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">min_date =</span> <span class="fu">min</span>(date, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    <span class="at">max_date =</span> <span class="fu">max</span>(date, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="co"># aggregate api data by community, topic, and date</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>api_summary <span class="ot">&lt;-</span> api_long <span class="sc">|&gt;</span> </span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(community, topic_tag, date) <span class="sc">|&gt;</span> </span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">article_count =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a><span class="co"># get total articles by community with date info</span></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>api_community_totals <span class="ot">&lt;-</span> api_long <span class="sc">|&gt;</span> </span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(community) <span class="sc">|&gt;</span> </span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_articles =</span> <span class="fu">n</span>(),</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="co"># create aggregated &quot;chicago&quot; row with total population from all neighborhoods</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>chicago_totals <span class="ot">&lt;-</span> census_clean <span class="sc">|&gt;</span> </span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">community =</span> <span class="st">&quot;chicago&quot;</span>,</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_population =</span> <span class="fu">sum</span>(total_population, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    <span class="at">white =</span> <span class="fu">sum</span>(white, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    <span class="at">black_or_african_american =</span> <span class="fu">sum</span>(black_or_african_american, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">american_indian_or_alaska_native =</span> <span class="fu">sum</span>(american_indian_or_alaska_native, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">asian =</span> <span class="fu">sum</span>(asian, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>    <span class="at">native_hawaiian_or_pacific_islander =</span> <span class="fu">sum</span>(native_hawaiian_or_pacific_islander, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>    <span class="at">other_race =</span> <span class="fu">sum</span>(other_race, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>    <span class="at">multiracial =</span> <span class="fu">sum</span>(multiracial, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>    <span class="at">hispanic_or_latino =</span> <span class="fu">sum</span>(hispanic_or_latino, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">white_not_hispanic_or_latino =</span> <span class="fu">sum</span>(white_not_hispanic_or_latino, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">under_25_000 =</span> <span class="fu">sum</span>(under_25_000, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">x25_000_to_49_999 =</span> <span class="fu">sum</span>(x25_000_to_49_999, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">x50_000_to_74_999 =</span> <span class="fu">sum</span>(x50_000_to_74_999, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>    <span class="at">x75_000_to_125_000 =</span> <span class="fu">sum</span>(x75_000_to_125_000, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">x125_000 =</span> <span class="fu">sum</span>(x125_000, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_0_17 =</span> <span class="fu">sum</span>(age_0_17, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_18_24 =</span> <span class="fu">sum</span>(age_18_24, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_25_34 =</span> <span class="fu">sum</span>(age_25_34, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_35_49 =</span> <span class="fu">sum</span>(age_35_49, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_50_64 =</span> <span class="fu">sum</span>(age_50_64, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>    <span class="at">age_65_plus =</span> <span class="fu">sum</span>(age_65_plus, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Placeholder values for spatial columns</span></span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">the_geom =</span> <span class="cn">NA_character_</span>,</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>    <span class="at">area_num_1 =</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a>    <span class="at">shape_area =</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>    <span class="at">shape_len =</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>    <span class="at">acs_year =</span> <span class="cn">NA_real_</span></span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a><span class="co"># merge with spatial data (77 neighborhoods only, then add chicago row)</span></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>full_data_neighborhoods <span class="ot">&lt;-</span> chi_boundaries_clean <span class="sc">|&gt;</span> </span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>    api_community_totals <span class="sc">|&gt;</span> <span class="fu">filter</span>(community <span class="sc">!=</span> <span class="st">&quot;chicago&quot;</span>), </span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;community&quot;</span></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>    api_summary <span class="sc">|&gt;</span> <span class="fu">filter</span>(community <span class="sc">!=</span> <span class="st">&quot;chicago&quot;</span>), </span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;community&quot;</span>, </span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>    <span class="at">relationship =</span> <span class="st">&quot;many-to-many&quot;</span></span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a><span class="co"># merge citywide data</span></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>full_data_citywide <span class="ot">&lt;-</span> chicago_totals <span class="sc">|&gt;</span></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a>    api_community_totals <span class="sc">|&gt;</span> <span class="fu">filter</span>(community <span class="sc">==</span> <span class="st">&quot;chicago&quot;</span>),</span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;community&quot;</span></span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>    api_summary <span class="sc">|&gt;</span> <span class="fu">filter</span>(community <span class="sc">==</span> <span class="st">&quot;chicago&quot;</span>),</span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;community&quot;</span>,</span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>    <span class="at">relationship =</span> <span class="st">&quot;many-to-many&quot;</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a><span class="co"># combine neighborhoods and citywide</span></span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a>full_data <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(full_data_neighborhoods, full_data_citywide)</span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a><span class="co"># clean up and handle NAs</span></span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>full_data <span class="ot">&lt;-</span> full_data <span class="sc">|&gt;</span> </span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">starts_with</span>(<span class="st">&quot;female&quot;</span>), <span class="sc">-</span><span class="fu">starts_with</span>(<span class="st">&quot;male&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">ends_with</span>(<span class="st">&quot;.y&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename_with</span>(<span class="sc">~</span><span class="fu">str_remove</span>(., <span class="st">&quot;</span><span class="sc">\\</span><span class="st">.x$&quot;</span>), <span class="fu">ends_with</span>(<span class="st">&quot;.x&quot;</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>    <span class="at">total_articles =</span> <span class="fu">replace_na</span>(total_articles, <span class="dv">0</span>),</span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>    <span class="at">article_count =</span> <span class="fu">replace_na</span>(article_count, <span class="dv">0</span>),</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_tag =</span> <span class="fu">replace_na</span>(topic_tag, <span class="st">&quot;No Coverage&quot;</span>)</span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a><span class="co"># add per person calculations</span></span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a>full_data <span class="ot">&lt;-</span> full_data <span class="sc">|&gt;</span></span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>    <span class="co"># overall articles per person</span></span>
+<span id="cb4-123"><a href="#cb4-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_person =</span> <span class="fu">if_else</span>(total_population <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-124"><a href="#cb4-124" aria-hidden="true" tabindex="-1"></a>                                  total_articles <span class="sc">/</span> total_population, </span>
+<span id="cb4-125"><a href="#cb4-125" aria-hidden="true" tabindex="-1"></a>                                  <span class="dv">0</span>),</span>
+<span id="cb4-126"><a href="#cb4-126" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_1000 =</span> <span class="fu">if_else</span>(total_population <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-127"><a href="#cb4-127" aria-hidden="true" tabindex="-1"></a>                                (total_articles <span class="sc">/</span> total_population) <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a>                                <span class="dv">0</span>),</span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a>    <span class="co"># articles per 1,000 by AGE</span></span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_0_17 =</span> <span class="fu">if_else</span>(age_0_17 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a>                                      article_count <span class="sc">/</span> age_0_17, </span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>                                      <span class="dv">0</span>),</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_18_24 =</span> <span class="fu">if_else</span>(age_18_24 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> age_18_24, </span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_25_34 =</span> <span class="fu">if_else</span>(age_25_34 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-138"><a href="#cb4-138" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> age_25_34, </span>
+<span id="cb4-139"><a href="#cb4-139" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-140"><a href="#cb4-140" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_35_49 =</span> <span class="fu">if_else</span>(age_35_49 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-141"><a href="#cb4-141" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> age_35_49, </span>
+<span id="cb4-142"><a href="#cb4-142" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-143"><a href="#cb4-143" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_50_64 =</span> <span class="fu">if_else</span>(age_50_64 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-144"><a href="#cb4-144" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> age_50_64, </span>
+<span id="cb4-145"><a href="#cb4-145" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-146"><a href="#cb4-146" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_articles_per_65_plus =</span> <span class="fu">if_else</span>(age_65_plus <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-147"><a href="#cb4-147" aria-hidden="true" tabindex="-1"></a>                                         article_count <span class="sc">/</span> age_65_plus, </span>
+<span id="cb4-148"><a href="#cb4-148" aria-hidden="true" tabindex="-1"></a>                                         <span class="dv">0</span>),</span>
+<span id="cb4-149"><a href="#cb4-149" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-150"><a href="#cb4-150" aria-hidden="true" tabindex="-1"></a>    <span class="co"># articles per 1,000 by RACE/ETHNICITY</span></span>
+<span id="cb4-151"><a href="#cb4-151" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_white =</span> <span class="fu">if_else</span>(white <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-152"><a href="#cb4-152" aria-hidden="true" tabindex="-1"></a>                                 article_count <span class="sc">/</span> white <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-153"><a href="#cb4-153" aria-hidden="true" tabindex="-1"></a>                                 <span class="dv">0</span>),</span>
+<span id="cb4-154"><a href="#cb4-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_black =</span> <span class="fu">if_else</span>(black_or_african_american <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-155"><a href="#cb4-155" aria-hidden="true" tabindex="-1"></a>                                 article_count <span class="sc">/</span> black_or_african_american <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-156"><a href="#cb4-156" aria-hidden="true" tabindex="-1"></a>                                 <span class="dv">0</span>),</span>
+<span id="cb4-157"><a href="#cb4-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_asian =</span> <span class="fu">if_else</span>(asian <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-158"><a href="#cb4-158" aria-hidden="true" tabindex="-1"></a>                                 article_count <span class="sc">/</span> asian <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-159"><a href="#cb4-159" aria-hidden="true" tabindex="-1"></a>                                 <span class="dv">0</span>),</span>
+<span id="cb4-160"><a href="#cb4-160" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_native_american =</span> <span class="fu">if_else</span>(american_indian_or_alaska_native <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-161"><a href="#cb4-161" aria-hidden="true" tabindex="-1"></a>                                           article_count <span class="sc">/</span> american_indian_or_alaska_native <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-162"><a href="#cb4-162" aria-hidden="true" tabindex="-1"></a>                                           <span class="dv">0</span>),</span>
+<span id="cb4-163"><a href="#cb4-163" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_pacific_islander =</span> <span class="fu">if_else</span>(native_hawaiian_or_pacific_islander <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-164"><a href="#cb4-164" aria-hidden="true" tabindex="-1"></a>                                            article_count <span class="sc">/</span> native_hawaiian_or_pacific_islander <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-165"><a href="#cb4-165" aria-hidden="true" tabindex="-1"></a>                                            <span class="dv">0</span>),</span>
+<span id="cb4-166"><a href="#cb4-166" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_other_race =</span> <span class="fu">if_else</span>(other_race <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-167"><a href="#cb4-167" aria-hidden="true" tabindex="-1"></a>                                      article_count <span class="sc">/</span> other_race <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-168"><a href="#cb4-168" aria-hidden="true" tabindex="-1"></a>                                      <span class="dv">0</span>),</span>
+<span id="cb4-169"><a href="#cb4-169" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_multiracial =</span> <span class="fu">if_else</span>(multiracial <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-170"><a href="#cb4-170" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> multiracial <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-171"><a href="#cb4-171" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-172"><a href="#cb4-172" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_hispanic =</span> <span class="fu">if_else</span>(hispanic_or_latino <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-173"><a href="#cb4-173" aria-hidden="true" tabindex="-1"></a>                                    article_count <span class="sc">/</span> hispanic_or_latino <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-174"><a href="#cb4-174" aria-hidden="true" tabindex="-1"></a>                                    <span class="dv">0</span>),</span>
+<span id="cb4-175"><a href="#cb4-175" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_white_non_hispanic =</span> <span class="fu">if_else</span>(white_not_hispanic_or_latino <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-176"><a href="#cb4-176" aria-hidden="true" tabindex="-1"></a>                                              article_count <span class="sc">/</span> white_not_hispanic_or_latino <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-177"><a href="#cb4-177" aria-hidden="true" tabindex="-1"></a>                                              <span class="dv">0</span>),</span>
+<span id="cb4-178"><a href="#cb4-178" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-179"><a href="#cb4-179" aria-hidden="true" tabindex="-1"></a>    <span class="co"># articles per 1,000 by INCOME bracket</span></span>
+<span id="cb4-180"><a href="#cb4-180" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_under_25k =</span> <span class="fu">if_else</span>(under_25_000 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-181"><a href="#cb4-181" aria-hidden="true" tabindex="-1"></a>                                     article_count <span class="sc">/</span> under_25_000 <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-182"><a href="#cb4-182" aria-hidden="true" tabindex="-1"></a>                                     <span class="dv">0</span>),</span>
+<span id="cb4-183"><a href="#cb4-183" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_25k_to_50k =</span> <span class="fu">if_else</span>(x25_000_to_49_999 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-184"><a href="#cb4-184" aria-hidden="true" tabindex="-1"></a>                                      article_count <span class="sc">/</span> x25_000_to_49_999 <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-185"><a href="#cb4-185" aria-hidden="true" tabindex="-1"></a>                                      <span class="dv">0</span>),</span>
+<span id="cb4-186"><a href="#cb4-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_50k_to_75k =</span> <span class="fu">if_else</span>(x50_000_to_74_999 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-187"><a href="#cb4-187" aria-hidden="true" tabindex="-1"></a>                                      article_count <span class="sc">/</span> x50_000_to_74_999 <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-188"><a href="#cb4-188" aria-hidden="true" tabindex="-1"></a>                                      <span class="dv">0</span>),</span>
+<span id="cb4-189"><a href="#cb4-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_75k_to_125k =</span> <span class="fu">if_else</span>(x75_000_to_125_000 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-190"><a href="#cb4-190" aria-hidden="true" tabindex="-1"></a>                                       article_count <span class="sc">/</span> x75_000_to_125_000 <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-191"><a href="#cb4-191" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">0</span>),</span>
+<span id="cb4-192"><a href="#cb4-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">articles_per_over_125k =</span> <span class="fu">if_else</span>(x125_000 <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb4-193"><a href="#cb4-193" aria-hidden="true" tabindex="-1"></a>                                     article_count <span class="sc">/</span> x125_000 <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb4-194"><a href="#cb4-194" aria-hidden="true" tabindex="-1"></a>                                     <span class="dv">0</span>)</span>
+<span id="cb4-195"><a href="#cb4-195" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-196"><a href="#cb4-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-197"><a href="#cb4-197" aria-hidden="true" tabindex="-1"></a><span class="co"># prepare data for shiny app ----</span></span>
+<span id="cb4-198"><a href="#cb4-198" aria-hidden="true" tabindex="-1"></a><span class="co"># create chi_boundaries_sf (spatial data with census info - 77 NEIGHBORHOODS ONLY, no chicago)</span></span>
+<span id="cb4-199"><a href="#cb4-199" aria-hidden="true" tabindex="-1"></a>chi_boundaries_sf <span class="ot">&lt;-</span> chi_boundaries_clean <span class="sc">|&gt;</span> </span>
+<span id="cb4-200"><a href="#cb4-200" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">wkt =</span> <span class="st">&quot;the_geom&quot;</span>, <span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb4-201"><a href="#cb4-201" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(community, total_population, white, black_or_african_american, </span>
+<span id="cb4-202"><a href="#cb4-202" aria-hidden="true" tabindex="-1"></a>         american_indian_or_alaska_native, asian, native_hawaiian_or_pacific_islander,</span>
+<span id="cb4-203"><a href="#cb4-203" aria-hidden="true" tabindex="-1"></a>         other_race, multiracial, hispanic_or_latino,</span>
+<span id="cb4-204"><a href="#cb4-204" aria-hidden="true" tabindex="-1"></a>         under_25_000, x25_000_to_49_999, x50_000_to_74_999, </span>
+<span id="cb4-205"><a href="#cb4-205" aria-hidden="true" tabindex="-1"></a>         x75_000_to_125_000, x125_000,</span>
+<span id="cb4-206"><a href="#cb4-206" aria-hidden="true" tabindex="-1"></a>         age_0_17, age_18_24, age_25_34, age_35_49, age_50_64, age_65_plus,</span>
+<span id="cb4-207"><a href="#cb4-207" aria-hidden="true" tabindex="-1"></a>         the_geom) <span class="sc">|&gt;</span> </span>
+<span id="cb4-208"><a href="#cb4-208" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(community, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-209"><a href="#cb4-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-210"><a href="#cb4-210" aria-hidden="true" tabindex="-1"></a><span class="co"># create article_data (includes BOTH neighborhood AND citywide articles)</span></span>
+<span id="cb4-211"><a href="#cb4-211" aria-hidden="true" tabindex="-1"></a>article_data <span class="ot">&lt;-</span> api_detail <span class="sc">|&gt;</span> </span>
+<span id="cb4-212"><a href="#cb4-212" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
+<span id="cb4-213"><a href="#cb4-213" aria-hidden="true" tabindex="-1"></a>    <span class="at">article_date =</span> date,</span>
+<span id="cb4-214"><a href="#cb4-214" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_match =</span> topic_tag</span>
+<span id="cb4-215"><a href="#cb4-215" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb4-216"><a href="#cb4-216" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(community, topic_match, article_date, year, month, year_month)</span>
+<span id="cb4-217"><a href="#cb4-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-218"><a href="#cb4-218" aria-hidden="true" tabindex="-1"></a><span class="co"># create topics vector</span></span>
+<span id="cb4-219"><a href="#cb4-219" aria-hidden="true" tabindex="-1"></a>topic_choices <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb4-220"><a href="#cb4-220" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Arts &amp; Culture&quot;</span>, <span class="st">&quot;Business&quot;</span>, <span class="st">&quot;Crime &amp; Public Safety&quot;</span>, <span class="st">&quot;Education&quot;</span>,</span>
+<span id="cb4-221"><a href="#cb4-221" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Food &amp; Restaurants&quot;</span>, <span class="st">&quot;Health &amp; Environment&quot;</span>, <span class="st">&quot;Housing&quot;</span>, <span class="st">&quot;Immigration&quot;</span>,</span>
+<span id="cb4-222"><a href="#cb4-222" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Politics&quot;</span>, <span class="st">&quot;Social Movements&quot;</span>, <span class="st">&quot;Sports &amp; Recreation&quot;</span>, <span class="st">&quot;Transportation &amp; Infrastructure&quot;</span></span>
+<span id="cb4-223"><a href="#cb4-223" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-224"><a href="#cb4-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-225"><a href="#cb4-225" aria-hidden="true" tabindex="-1"></a><span class="co"># name demographic vars</span></span>
+<span id="cb4-226"><a href="#cb4-226" aria-hidden="true" tabindex="-1"></a>demo_choices <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb4-227"><a href="#cb4-227" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;None&quot;</span> <span class="ot">=</span> <span class="st">&quot;None&quot;</span>,</span>
+<span id="cb4-228"><a href="#cb4-228" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Total Population&quot;</span> <span class="ot">=</span> <span class="st">&quot;total_population&quot;</span>,</span>
+<span id="cb4-229"><a href="#cb4-229" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;White&quot;</span> <span class="ot">=</span> <span class="st">&quot;white&quot;</span>,</span>
+<span id="cb4-230"><a href="#cb4-230" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Black/African American&quot;</span> <span class="ot">=</span> <span class="st">&quot;black_or_african_american&quot;</span>,</span>
+<span id="cb4-231"><a href="#cb4-231" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Asian&quot;</span> <span class="ot">=</span> <span class="st">&quot;asian&quot;</span>,</span>
+<span id="cb4-232"><a href="#cb4-232" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Native American&quot;</span> <span class="ot">=</span> <span class="st">&quot;american_indian_or_alaska_native&quot;</span>,</span>
+<span id="cb4-233"><a href="#cb4-233" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Pacific Islander&quot;</span> <span class="ot">=</span> <span class="st">&quot;native_hawaiian_or_pacific_islander&quot;</span>,</span>
+<span id="cb4-234"><a href="#cb4-234" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Other Race&quot;</span> <span class="ot">=</span> <span class="st">&quot;other_race&quot;</span>,</span>
+<span id="cb4-235"><a href="#cb4-235" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Multiracial&quot;</span> <span class="ot">=</span> <span class="st">&quot;multiracial&quot;</span>,</span>
+<span id="cb4-236"><a href="#cb4-236" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Hispanic/Latino&quot;</span> <span class="ot">=</span> <span class="st">&quot;hispanic_or_latino&quot;</span>,</span>
+<span id="cb4-237"><a href="#cb4-237" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Income: Under $25k&quot;</span> <span class="ot">=</span> <span class="st">&quot;under_25_000&quot;</span>,</span>
+<span id="cb4-238"><a href="#cb4-238" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Income: $25k-$50k&quot;</span> <span class="ot">=</span> <span class="st">&quot;x25_000_to_49_999&quot;</span>,</span>
+<span id="cb4-239"><a href="#cb4-239" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Income: $50k-$75k&quot;</span> <span class="ot">=</span> <span class="st">&quot;x50_000_to_74_999&quot;</span>,</span>
+<span id="cb4-240"><a href="#cb4-240" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Income: $75k-$125k&quot;</span> <span class="ot">=</span> <span class="st">&quot;x75_000_to_125_000&quot;</span>,</span>
+<span id="cb4-241"><a href="#cb4-241" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Income: Over $125k&quot;</span> <span class="ot">=</span> <span class="st">&quot;x125_000&quot;</span>,</span>
+<span id="cb4-242"><a href="#cb4-242" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 0-17&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_0_17&quot;</span>,</span>
+<span id="cb4-243"><a href="#cb4-243" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 18-24&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_18_24&quot;</span>,</span>
+<span id="cb4-244"><a href="#cb4-244" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 25-34&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_25_34&quot;</span>,</span>
+<span id="cb4-245"><a href="#cb4-245" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 35-49&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_35_49&quot;</span>,</span>
+<span id="cb4-246"><a href="#cb4-246" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 50-64&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_50_64&quot;</span>,</span>
+<span id="cb4-247"><a href="#cb4-247" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Age: 65+&quot;</span> <span class="ot">=</span> <span class="st">&quot;age_65_plus&quot;</span></span>
+<span id="cb4-248"><a href="#cb4-248" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-249"><a href="#cb4-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-250"><a href="#cb4-250" aria-hidden="true" tabindex="-1"></a><span class="co"># convert date_range to list format</span></span>
+<span id="cb4-251"><a href="#cb4-251" aria-hidden="true" tabindex="-1"></a>date_range <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-252"><a href="#cb4-252" aria-hidden="true" tabindex="-1"></a>  <span class="at">min_date =</span> date_range<span class="sc">$</span>min_date,</span>
+<span id="cb4-253"><a href="#cb4-253" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_date =</span> date_range<span class="sc">$</span>max_date</span>
+<span id="cb4-254"><a href="#cb4-254" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-255"><a href="#cb4-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-256"><a href="#cb4-256" aria-hidden="true" tabindex="-1"></a><span class="co"># save out ----</span></span>
+<span id="cb4-257"><a href="#cb4-257" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(</span>
+<span id="cb4-258"><a href="#cb4-258" aria-hidden="true" tabindex="-1"></a>  full_data,</span>
+<span id="cb4-259"><a href="#cb4-259" aria-hidden="true" tabindex="-1"></a>  article_data, </span>
+<span id="cb4-260"><a href="#cb4-260" aria-hidden="true" tabindex="-1"></a>  chi_boundaries_sf,      <span class="co"># only 77 neighborhoods with spatial boundaries</span></span>
+<span id="cb4-261"><a href="#cb4-261" aria-hidden="true" tabindex="-1"></a>  article_data,           <span class="co"># aLL articles including &quot;chicago&quot; citywide</span></span>
+<span id="cb4-262"><a href="#cb4-262" aria-hidden="true" tabindex="-1"></a>  date_range,             <span class="co"># date range for slider</span></span>
+<span id="cb4-263"><a href="#cb4-263" aria-hidden="true" tabindex="-1"></a>  topic_choices,          <span class="co"># topic options</span></span>
+<span id="cb4-264"><a href="#cb4-264" aria-hidden="true" tabindex="-1"></a>  demo_choices,           <span class="co"># demographic variable options</span></span>
+<span id="cb4-265"><a href="#cb4-265" aria-hidden="true" tabindex="-1"></a>  <span class="at">file =</span> <span class="fu">here</span>(<span class="st">&quot;data/full_data.rda&quot;</span>)</span>
+<span id="cb4-266"><a href="#cb4-266" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-267"><a href="#cb4-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-268"><a href="#cb4-268" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(api_clean, <span class="at">file =</span> <span class="fu">here</span>(<span class="st">&quot;data/ai_check_data.rda&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">%||%</span><span class="st">`</span> <span class="ot">&lt;-</span> <span class="cf">function</span>(x, y) <span class="cf">if</span> (<span class="fu">is.null</span>(x)) y <span class="cf">else</span> x</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># constants ----</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>openai_api_key <span class="ot">&lt;-</span> <span class="fu">Sys.getenv</span>(<span class="st">&quot;OPEN_AI_KEY&quot;</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>valid_topics <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Arts &amp; Culture&quot;</span>, <span class="st">&quot;Business&quot;</span>, <span class="st">&quot;Crime &amp; Public Safety&quot;</span>, <span class="st">&quot;Education&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Food &amp; Restaurants&quot;</span>, <span class="st">&quot;Health &amp; Environment&quot;</span>, <span class="st">&quot;Housing&quot;</span>, <span class="st">&quot;Immigration&quot;</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Politics&quot;</span>, <span class="st">&quot;Social Movements&quot;</span>, <span class="st">&quot;Sports &amp; Recreation&quot;</span>, <span class="st">&quot;Transportation &amp; Infrastructure&quot;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co"># helper functions ----</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>clean_html_content <span class="ot">&lt;-</span> <span class="cf">function</span>(html_text) {</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tryCatch</span>({</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="ot">&lt;-</span> <span class="fu">read_html</span>(html_text) <span class="sc">%&gt;%</span> <span class="fu">html_text2</span>()</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="ot">&lt;-</span> <span class="fu">str_squish</span>(cleaned)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">substr</span>(cleaned, <span class="dv">1</span>, <span class="dv">2000</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="ot">&lt;-</span> <span class="fu">gsub</span>(<span class="st">&quot;&lt;[^&gt;]+&gt;&quot;</span>, <span class="st">&quot; &quot;</span>, html_text)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    cleaned <span class="ot">&lt;-</span> <span class="fu">str_squish</span>(cleaned)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">substr</span>(cleaned, <span class="dv">1</span>, <span class="dv">2000</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>classify_article <span class="ot">&lt;-</span> <span class="cf">function</span>(text, api_key, <span class="at">max_retries =</span> <span class="dv">5</span>) {</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  clean_text <span class="ot">&lt;-</span> <span class="fu">clean_html_content</span>(text)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>  topic_list <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="st">&quot;-&quot;</span>, valid_topics, <span class="at">collapse =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>  prompt <span class="ot">&lt;-</span> <span class="fu">paste</span>(</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;classify this chicago news article into one of these topics:&quot;</span>,</span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>    topic_list,</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="sc">\n</span><span class="st">return only json:&quot;</span>,</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>    <span class="st">&#39;{&quot;topic&quot;: &quot;Topic Name&quot;, &quot;confidence&quot;: 0.85}&#39;</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="sc">\n</span><span class="st">--- article start ---</span><span class="sc">\n</span><span class="st">&quot;</span>,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    clean_text,</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;</span><span class="sc">\n</span><span class="st">--- article end ---&quot;</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (attempt <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>max_retries) {</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    result <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>      resp <span class="ot">&lt;-</span> <span class="fu">request</span>(<span class="st">&quot;https://api.openai.com/v1/chat/completions&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>        <span class="fu">req_headers</span>(<span class="at">Authorization =</span> <span class="fu">paste</span>(<span class="st">&quot;Bearer&quot;</span>, api_key),</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>                    <span class="st">`</span><span class="at">Content-Type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;application/json&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>        <span class="fu">req_body_json</span>(<span class="fu">list</span>(</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>          <span class="at">model =</span> <span class="st">&quot;gpt-4o-mini&quot;</span>,</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>          <span class="at">messages =</span> <span class="fu">list</span>(<span class="fu">list</span>(<span class="at">role =</span> <span class="st">&quot;user&quot;</span>, <span class="at">content =</span> prompt)),</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>          <span class="at">temperature =</span> <span class="fl">0.5</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>        )) <span class="sc">%&gt;%</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>        <span class="fu">req_timeout</span>(<span class="dv">60</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>        <span class="fu">req_perform</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>        <span class="fu">resp_body_json</span>()</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>      raw <span class="ot">&lt;-</span> resp<span class="sc">$</span>choices[[<span class="dv">1</span>]]<span class="sc">$</span>message<span class="sc">$</span>content</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>      json_str <span class="ot">&lt;-</span> <span class="fu">str_extract</span>(raw, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">{[</span><span class="sc">\\</span><span class="st">s</span><span class="sc">\\</span><span class="st">S]*</span><span class="sc">\\</span><span class="st">}&quot;</span>)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>      parsed <span class="ot">&lt;-</span> <span class="fu">fromJSON</span>(json_str)</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>      topic <span class="ot">&lt;-</span> parsed<span class="sc">$</span>topic <span class="sc">%||%</span> <span class="cn">NA_character_</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span>topic <span class="sc">%in%</span> valid_topics) topic <span class="ot">&lt;-</span> <span class="cn">NA_character_</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>      <span class="fu">list</span>(<span class="at">topic =</span> topic, <span class="at">confidence =</span> <span class="fu">as.numeric</span>(parsed<span class="sc">$</span>confidence <span class="sc">%||%</span> <span class="cn">NA_real_</span>), <span class="at">success =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    }, <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>      <span class="cn">NULL</span></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(result)) <span class="fu">return</span>(result)</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>    <span class="fu">Sys.sleep</span>(<span class="dv">2</span>)</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">topic =</span> <span class="cn">NA_character_</span>, <span class="at">confidence =</span> <span class="cn">NA_real_</span>, <span class="at">success =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a><span class="co"># auto-restart processing ----</span></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>process_articles <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">articles_file =</span> <span class="st">&quot;data/api_scrape.rds&quot;</span>,</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>                             <span class="at">checkpoint_file =</span> <span class="st">&quot;data/my_openai_checkpoint.rds&quot;</span>,</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>                             <span class="at">batch_size =</span> <span class="dv">10</span>,</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>                             <span class="at">pause_minutes =</span> <span class="dv">1</span>) {</span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>  all_articles <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(articles_file) <span class="sc">%&gt;%</span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">row_id =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(id, row_id, content.rendered)</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>  results <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">file.exists</span>(checkpoint_file)) <span class="fu">readRDS</span>(checkpoint_file) <span class="cf">else</span> <span class="fu">tibble</span>(</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">id =</span> <span class="fu">character</span>(), <span class="at">row_id =</span> <span class="fu">integer</span>(), <span class="at">content.rendered =</span> <span class="fu">character</span>(),</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>    <span class="at">topic_tag =</span> <span class="fu">character</span>(), <span class="at">topic_confidence =</span> <span class="fu">numeric</span>()</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>  remaining <span class="ot">&lt;-</span> <span class="fu">anti_join</span>(all_articles, results, <span class="at">by =</span> <span class="st">&quot;row_id&quot;</span>)</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>  total <span class="ot">&lt;-</span> <span class="fu">nrow</span>(all_articles)</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (<span class="fu">nrow</span>(remaining) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(remaining))) {</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>      art <span class="ot">&lt;-</span> remaining[i, ]</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">fetching article&quot;</span>, art<span class="sc">$</span>row_id, <span class="st">&quot;of&quot;</span>, total, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>      res <span class="ot">&lt;-</span> <span class="fu">classify_article</span>(art<span class="sc">$</span>content.rendered, openai_api_key)</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>      results <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(results, <span class="fu">tibble</span>(</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>        <span class="at">id =</span> art<span class="sc">$</span>id, <span class="at">row_id =</span> art<span class="sc">$</span>row_id, <span class="at">content.rendered =</span> art<span class="sc">$</span>content.rendered,</span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>        <span class="at">topic_tag =</span> res<span class="sc">$</span>topic, <span class="at">topic_confidence =</span> res<span class="sc">$</span>confidence</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>      ))</span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (i <span class="sc">%%</span> batch_size <span class="sc">==</span> <span class="dv">0</span> <span class="sc">||</span> i <span class="sc">==</span> <span class="fu">nrow</span>(remaining)) {</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>        <span class="fu">saveRDS</span>(results, checkpoint_file)</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>        <span class="fu">cat</span>(<span class="st">&quot;✓ checkpoint saved (&quot;</span>, <span class="fu">nrow</span>(results), <span class="st">&quot;total)</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>      <span class="fu">Sys.sleep</span>(<span class="fl">0.5</span>)</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>    remaining <span class="ot">&lt;-</span> <span class="fu">anti_join</span>(all_articles, results, <span class="at">by =</span> <span class="st">&quot;row_id&quot;</span>)</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">nrow</span>(remaining) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>      <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">pausing for&quot;</span>, pause_minutes, <span class="st">&quot;minute(s) to avoid rate limits...</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>      <span class="fu">Sys.sleep</span>(pause_minutes <span class="sc">*</span> <span class="dv">60</span>)</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">🎉 all articles processed!</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>  results</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a><span class="co"># call function ----</span></span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>final_results <span class="ot">&lt;-</span> <span class="fu">process_articles</span>(</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">articles_file =</span> <span class="st">&quot;data/api_scrape.rds&quot;</span>,</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">checkpoint_file =</span> <span class="st">&quot;data/my_openai_checkpoint.rds&quot;</span>,</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>  <span class="at">batch_size =</span> <span class="dv">10</span>,</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">pause_minutes =</span> <span class="dv">1</span></span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(final_results, <span class="fu">here</span>(<span class="st">&quot;data&quot;</span>, <span class="st">&quot;articles_with_topics_final.rds&quot;</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># chunked from modules directory</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>      <span class="co"># calculate display value</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (input<span class="sc">$</span>metric_type <span class="sc">==</span> <span class="st">&quot;per_capita&quot;</span>) {</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        map_data <span class="ot">&lt;-</span> map_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">display_value =</span> <span class="fu">if_else</span>(total_population <span class="sc">&gt;</span> <span class="dv">0</span>, </span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                                         (article_count <span class="sc">/</span> total_population) <span class="sc">*</span> <span class="dv">1000</span>, </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                                         <span class="dv">0</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        map_data <span class="ot">&lt;-</span> map_data <span class="sc">%&gt;%</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>          <span class="fu">mutate</span>(<span class="at">display_value =</span> article_count)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>      n <span class="ot">&lt;-</span> <span class="fu">nrow</span>(map_data)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>      <span class="co"># blue intensity (articles) - Using complementary cyan/blue</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>      blue_intensity <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (input<span class="sc">$</span>blue_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span>) {</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        max_val <span class="ot">&lt;-</span> <span class="fu">max</span>(map_data<span class="sc">$</span>display_value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.infinite</span>(max_val) <span class="sc">&amp;&amp;</span> max_val <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>          normalized_vals <span class="ot">&lt;-</span> map_data<span class="sc">$</span>display_value <span class="sc">/</span> max_val</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>          blue_intensity <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(normalized_vals)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>      <span class="co"># yellow intensity (demographics) - Using tertiary yellow</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>      yellow_intensity <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">0</span>, n)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (input<span class="sc">$</span>demo_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> input<span class="sc">$</span>demo_var <span class="sc">%in%</span> <span class="fu">names</span>(map_data)) {</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>        demo_vals <span class="ot">&lt;-</span> <span class="fu">suppressWarnings</span>(<span class="fu">as.numeric</span>(map_data[[input<span class="sc">$</span>demo_var]]))</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>        demo_vals[<span class="fu">is.na</span>(demo_vals)] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>        max_demo <span class="ot">&lt;-</span> <span class="fu">max</span>(demo_vals, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.infinite</span>(max_demo) <span class="sc">&amp;&amp;</span> max_demo <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>          normalized_demo <span class="ot">&lt;-</span> demo_vals <span class="sc">/</span> max_demo</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>          yellow_intensity <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(normalized_demo)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>      <span class="co"># determine colors - Orange Line palette</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>      fill_colors <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="st">&quot;#f1f3f2&quot;</span>, n)  <span class="co"># color-tertiary-light for no data</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>      <span class="co"># CITYWIDE TOGGLE ONLY - show blue when everything else is &quot;None&quot;</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (input<span class="sc">$</span>blue_var <span class="sc">==</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> input<span class="sc">$</span>demo_var <span class="sc">==</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> <span class="fu">isTRUE</span>(input<span class="sc">$</span>include_citywide)) {</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Blue gradient for citywide-only view</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>        citywide_max <span class="ot">&lt;-</span> <span class="fu">max</span>(map_data<span class="sc">$</span>article_count, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.infinite</span>(citywide_max) <span class="sc">&amp;&amp;</span> citywide_max <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>          fill_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n, <span class="cf">function</span>(i) {</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> (map_data<span class="sc">$</span>article_count[i] <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">&quot;#f1f3f2&quot;</span>)</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>            intensity <span class="ot">&lt;-</span> <span class="fu">sqrt</span>(map_data<span class="sc">$</span>article_count[i] <span class="sc">/</span> citywide_max)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>            <span class="co"># from light cyan to dark teal</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>            r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">173</span> <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">-</span> <span class="dv">173</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>            g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">216</span> <span class="sc">+</span> (<span class="dv">121</span> <span class="sc">-</span> <span class="dv">216</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>            b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">230</span> <span class="sc">+</span> (<span class="dv">147</span> <span class="sc">-</span> <span class="dv">230</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>            <span class="fu">rgb</span>(r, g, b, <span class="at">maxColorValue =</span> <span class="dv">255</span>)</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>          })</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> <span class="cf">if</span> (input<span class="sc">$</span>blue_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> (input<span class="sc">$</span>demo_var <span class="sc">==</span> <span class="st">&quot;None&quot;</span>)) {</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>        <span class="co"># blue gradient: complementary light to dark</span></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>        fill_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n, <span class="cf">function</span>(i) {</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>          intensity <span class="ot">&lt;-</span> blue_intensity[i]</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> (intensity <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">&quot;#f1f3f2&quot;</span>)</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>          <span class="co"># from light cyan to dark teal (complementary to orange)</span></span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>          r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">173</span> <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">-</span> <span class="dv">173</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>          g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">216</span> <span class="sc">+</span> (<span class="dv">121</span> <span class="sc">-</span> <span class="dv">216</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>          b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">230</span> <span class="sc">+</span> (<span class="dv">147</span> <span class="sc">-</span> <span class="dv">230</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rgb</span>(r, g, b, <span class="at">maxColorValue =</span> <span class="dv">255</span>)</span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> <span class="cf">if</span> (input<span class="sc">$</span>blue_var <span class="sc">==</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> input<span class="sc">$</span>demo_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span>) {</span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>        <span class="co"># yellow gradient: tertiary light to dark</span></span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>        fill_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n, <span class="cf">function</span>(i) {</span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>          intensity <span class="ot">&lt;-</span> yellow_intensity[i]</span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span> (intensity <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">&quot;#f1f3f2&quot;</span>)</span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>          <span class="co"># From #f1ece4 to #eec200 (tertiary colors)</span></span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a>          r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">241</span> <span class="sc">+</span> (<span class="dv">238</span> <span class="sc">-</span> <span class="dv">241</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a>          g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">236</span> <span class="sc">+</span> (<span class="dv">194</span> <span class="sc">-</span> <span class="dv">236</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>          b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">228</span> <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">-</span> <span class="dv">228</span>) <span class="sc">*</span> intensity)</span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rgb</span>(r, g, b, <span class="at">maxColorValue =</span> <span class="dv">255</span>)</span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> <span class="cf">if</span> (input<span class="sc">$</span>blue_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span> <span class="sc">&amp;&amp;</span> input<span class="sc">$</span>demo_var <span class="sc">!=</span> <span class="st">&quot;None&quot;</span>) {</span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>        <span class="co"># green blend when both selected (secondary color)</span></span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a>        fill_colors <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="dv">1</span><span class="sc">:</span>n, <span class="cf">function</span>(i) {</span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a>          blue_val <span class="ot">&lt;-</span> blue_intensity[i]</span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a>          yellow_val <span class="ot">&lt;-</span> yellow_intensity[i]</span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span>(blue_val <span class="sc">==</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> yellow_val <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">&quot;#f1f3f2&quot;</span>)</span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>          avg_intensity <span class="ot">&lt;-</span> (blue_val <span class="sc">+</span> yellow_val) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a>          total <span class="ot">&lt;-</span> blue_val <span class="sc">+</span> yellow_val</span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a>          blue_weight <span class="ot">&lt;-</span> blue_val <span class="sc">/</span> total</span>
+<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a>          </span>
+<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a>          <span class="cf">if</span>(blue_weight <span class="sc">&gt;</span> <span class="fl">0.6</span>) {</span>
+<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a>            <span class="co"># more blue - cyan tones</span></span>
+<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a>            r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">173</span> <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">-</span> <span class="dv">173</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a>            g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">216</span> <span class="sc">+</span> (<span class="dv">150</span> <span class="sc">-</span> <span class="dv">216</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a>            b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">230</span> <span class="sc">+</span> (<span class="dv">136</span> <span class="sc">-</span> <span class="dv">230</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> <span class="cf">if</span>(blue_weight <span class="sc">&lt;</span> <span class="fl">0.4</span>) {</span>
+<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a>            <span class="co"># more yellow - warm green</span></span>
+<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a>            r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">200</span> <span class="sc">+</span> (<span class="dv">139</span> <span class="sc">-</span> <span class="dv">200</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a>            g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">220</span> <span class="sc">+</span> (<span class="dv">195</span> <span class="sc">-</span> <span class="dv">220</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a>            b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">150</span> <span class="sc">+</span> (<span class="dv">74</span> <span class="sc">-</span> <span class="dv">150</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a>          } <span class="cf">else</span> {</span>
+<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a>            <span class="co"># balanced - secondary green (#00bf7d)</span></span>
+<span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a>            r <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">180</span> <span class="sc">+</span> (<span class="dv">0</span> <span class="sc">-</span> <span class="dv">180</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a>            g <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">220</span> <span class="sc">+</span> (<span class="dv">191</span> <span class="sc">-</span> <span class="dv">220</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a>            b <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="dv">200</span> <span class="sc">+</span> (<span class="dv">125</span> <span class="sc">-</span> <span class="dv">200</span>) <span class="sc">*</span> avg_intensity)</span>
+<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>          }</span>
+<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a>          <span class="fu">rgb</span>(r, g, b, <span class="at">maxColorValue =</span> <span class="dv">255</span>)</span>
+<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a>      }</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 </div>
 </section>
 </section>

@@ -502,7 +502,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
         fill_colors <- sapply(1:n, function(i) {
           intensity <- blue_intensity[i]
           if (intensity == 0) return("#f1f3f2")
-          # From light cyan to dark teal (complementary to orange)
+          # from light cyan to dark teal (complementary to orange)
           r <- round(173 + (0 - 173) * intensity)
           g <- round(216 + (121 - 216) * intensity)
           b <- round(230 + (147 - 230) * intensity)
@@ -520,7 +520,7 @@ mapExplorerServer <- function(id, chi_boundaries_sf, article_data, date_range,
           rgb(r, g, b, maxColorValue = 255)
         })
       } else if (input$blue_var != "None" && input$demo_var != "None") {
-        # Green blend when both selected (secondary color)
+        # green blend when both selected (secondary color)
         fill_colors <- sapply(1:n, function(i) {
           blue_val <- blue_intensity[i]
           yellow_val <- yellow_intensity[i]

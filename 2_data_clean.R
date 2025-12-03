@@ -347,7 +347,7 @@ api_community_totals <- api_long |>
     .groups = "drop"
   )
 
-# NEW: Create aggregated "chicago" row with total population from all neighborhoods
+# create aggregated "chicago" row with total population from all neighborhoods
 chicago_totals <- census_clean |> 
   summarise(
     community = "chicago",
@@ -560,11 +560,11 @@ date_range <- list(
 save(
   full_data,
   article_data, 
-  chi_boundaries_sf,      # Only 77 neighborhoods with spatial boundaries
-  article_data,           # ALL articles including "chicago" citywide
-  date_range,             # Date range for slider
-  topic_choices,          # Topic options
-  demo_choices,           # Demographic variable options
+  chi_boundaries_sf,      # only 77 neighborhoods with spatial boundaries
+  article_data,           # aLL articles including "chicago" citywide
+  date_range,             # date range for slider
+  topic_choices,          # topic options
+  demo_choices,           # demographic variable options
   file = here("data/full_data.rda")
 )
 

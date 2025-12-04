@@ -25,8 +25,3 @@ This repo is now maintained by the Knight Lab. We encourage adaptation and furth
 -   `4_ai_check.R`: contains analysis of the [ai_check_data/](./ai_check_data/) experiment, where we each independently selected topics for randomly assigned articles to compare human and AI judgement.
 -   `5_local_hosting.R`: contains code to deploy dashboard to URL through shinyapps.io.
 -   `app.R`: contains code to run the Shiny dashboard.
-
-#### Final Artifact
-
--   `final_artifact.qmd`: QMD file for creating final artifact
--   `final_artifact.html`: rendered html version of final artifact
